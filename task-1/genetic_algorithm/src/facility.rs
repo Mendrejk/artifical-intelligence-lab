@@ -89,3 +89,22 @@ impl Facility {
         total_fitness
     }
 }
+
+#[derive(Debug)]
+struct FacilityInterior<T> {
+    interior: Vec<Option<T>>,
+    pub height: u32,
+    pub width: u32,
+}
+
+impl<T> FacilityInterior<T> {
+    fn position<P>(&self, predicate: P) -> Option<(u32, u32)>
+    where
+        P: FnMut(&Option<T>) -> bool,
+    {
+        self.interior
+            .iter()
+            .position(predicate)
+            .map(|i| (i as u32 / self.width, i as u32 % self.width))
+    }
+}
