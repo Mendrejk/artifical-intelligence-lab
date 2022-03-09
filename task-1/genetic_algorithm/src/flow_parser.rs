@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::facility_layout::{FacilityFlow, FacilityLayout};
 
 use std::fs;
+use std::iter::zip;
 
 pub fn parse_flows(flow_file_path: &str, cost_file_path: &str) -> FacilityLayout {
     // read the JSON files into strings
@@ -17,7 +18,7 @@ pub fn parse_flows(flow_file_path: &str, cost_file_path: &str) -> FacilityLayout
     // TODO use map() instead of doing this imperatively, somehow?
     let mut facility_flows: Vec<FacilityFlow> = Vec::new();
 
-    for i in flows.iter().zip(costs.iter()) {
+    for i in zip(&flows, &costs) {
         let (flow, cost) = i;
         facility_flows.push(parse_facility_flow(flow, cost));
     }
