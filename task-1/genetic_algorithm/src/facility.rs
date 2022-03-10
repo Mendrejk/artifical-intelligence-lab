@@ -93,12 +93,20 @@ impl Facility {
 #[derive(Debug)]
 struct FacilityInterior<T> {
     interior: Vec<Option<T>>,
-    pub height: u32,
-    pub width: u32,
+    height: u32,
+    width: u32,
 }
 
 impl<T> FacilityInterior<T> {
-    fn position<P>(&self, predicate: P) -> Option<(u32, u32)>
+    pub fn new<P>(interior: Vec<Option<T>>, height: u32, width: u32) -> Self {
+        FacilityInterior {
+            interior,
+            height,
+            width,
+        }
+    }
+
+    pub fn position<P>(&self, predicate: P) -> Option<(u32, u32)>
     where
         P: FnMut(&Option<T>) -> bool,
     {
