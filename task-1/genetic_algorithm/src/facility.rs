@@ -1,77 +1,51 @@
 use crate::facility_layout::FacilityLayout;
 
-use rand::Rng;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+
+use std::iter::zip;
 
 #[derive(Debug)]
 pub struct Facility {
-    interior: Vec<Vec<Option<i64>>>,
+    interior: FacilityInterior<i64>,
 }
 
 impl Facility {
-    // generates a new, random facility
-    pub fn generate_randomised_facility(y_dim: i64, x_dim: i64, machine_count: i64) -> Self {
-        let mut interior: Vec<Vec<Option<i64>>> = vec![vec![None; x_dim as usize]; y_dim as usize];
+    // generates a new facility with random machine arrangement
+    pub fn generate_randomised_facility(y_dim: u64, x_dim: u64, machines: Vec<i64>) -> Self {
+        let interior_size = y_dim * x_dim;
 
-        // TODO: do this less imperatively
-        let mut generated_count = 0;
-
-        let mut rng = rand::thread_rng();
-
-        while generated_count < machine_count {
-            let machine_y = rng.gen_range(0..y_dim) as usize;
-            let machine_x = rng.gen_range(0..x_dim) as usize;
-
-            if interior[machine_y][machine_x].is_none() {
-                interior[machine_y][machine_x] = Some(generated_count);
-                generated_count += 1;
-            }
+        if (interior_size as usize) < machines.len() {
+            panic!("The interior must be able to fit all of the machines!")
         }
 
-        Facility { interior }
+        let mut rng = thread_rng();
+        let mut shuffled_facility_indices: Vec<u64> = (0..interior_size).collect();
+        shuffled_facility_indices.shuffle(&mut rng);
+
+        let interior = zip(shuffled_facility_indices, machines).into_iter().fold(
+            vec![None; interior_size as usize],
+            |mut acc_vec: Vec<Option<i64>>, indices| {
+                let (facility_index, machine) = indices;
+
+                acc_vec[facility_index as usize] = Some(machine);
+                acc_vec
+            },
+        );
+
+        Facility {
+            interior: FacilityInterior::new(interior, y_dim),
+        }
     }
 
     pub fn calculate_distance(&self, from: i64, to: i64) -> Option<i64> {
-        // TODO: do this less imperatively
+        let (from_x, from_y) = self.interior.position(|&machine| machine == Some(from))?;
+        let (to_x, to_y) = self.interior.position(|&machine| machine == Some(to))?;
 
-        // find from
-        let mut from_x: Option<usize> = None;
-        let mut from_y: Option<usize> = None;
-
-        for i in 0..self.interior.len() {
-            let index = self.interior[i]
-                .iter()
-                .position(|&r| r.is_some() && r.unwrap() == from);
-            if index.is_some() {
-                from_x = index;
-                from_y = Some(i);
-
-                break;
-            }
-        }
-
-        // find to
-        let mut to_x: Option<usize> = None;
-        let mut to_y: Option<usize> = None;
-
-        for i in 0..self.interior.len() {
-            let index = self.interior[i]
-                .iter()
-                .position(|&r| r.is_some() && r.unwrap() == to);
-            if index.is_some() {
-                to_x = index;
-                to_y = Some(i);
-
-                break;
-            }
-        }
-
-        match (from_x, from_y, to_x, to_y) {
-            (Some(from_x), Some(from_y), Some(to_x), Some(to_y)) => Some(
-                ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
-                    as i64,
-            ),
-            _ => None,
-        }
+        Some(
+            ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
+                as i64,
+        )
     }
 
     pub fn calculate_fitness(&self, facility_layout: FacilityLayout) -> i64 {
@@ -93,26 +67,21 @@ impl Facility {
 #[derive(Debug)]
 struct FacilityInterior<T> {
     interior: Vec<Option<T>>,
-    height: u32,
-    width: u32,
+    width: u64,
 }
 
 impl<T> FacilityInterior<T> {
-    pub fn new<P>(interior: Vec<Option<T>>, height: u32, width: u32) -> Self {
-        FacilityInterior {
-            interior,
-            height,
-            width,
-        }
+    pub fn new(interior: Vec<Option<T>>, width: u64) -> Self {
+        FacilityInterior { interior, width }
     }
 
-    pub fn position<P>(&self, predicate: P) -> Option<(u32, u32)>
+    pub fn position<P>(&self, predicate: P) -> Option<(u64, u64)>
     where
         P: FnMut(&Option<T>) -> bool,
     {
         self.interior
             .iter()
             .position(predicate)
-            .map(|i| (i as u32 / self.width, i as u32 % self.width))
+            .map(|i| (i as u64 / self.width, i as u64 % self.width))
     }
 }
