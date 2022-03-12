@@ -49,18 +49,17 @@ impl Facility {
     }
 
     pub fn calculate_fitness(&self, facility_layout: FacilityLayout) -> i64 {
-        // TODO: do this less imperatively
-        let mut total_fitness: i64 = 0;
-
-        for facility_flow in &facility_layout.facility_flows {
-            total_fitness += self
-                .calculate_distance(facility_flow.source, facility_flow.dest)
-                .unwrap_or(0)
-                * facility_flow.amount
-                * facility_flow.cost;
-        }
-
-        total_fitness
+        facility_layout
+            .facility_flows
+            .iter()
+            .fold(0, |total_fitness, facility_flow| {
+                total_fitness
+                    + self
+                        .calculate_distance(facility_flow.source, facility_flow.dest)
+                        .unwrap_or(0)
+                        * facility_flow.amount
+                        * facility_flow.cost
+            })
     }
 }
 
