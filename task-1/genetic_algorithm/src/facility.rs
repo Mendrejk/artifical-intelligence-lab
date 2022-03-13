@@ -12,7 +12,7 @@ pub struct Facility {
 
 impl Facility {
     // generates a new facility with random machine arrangement
-    pub fn generate_randomised_facility(y_dim: u64, x_dim: u64, machines: Vec<i64>) -> Self {
+    pub fn generate_randomised_facility(y_dim: u64, x_dim: u64, machines: &[i64]) -> Self {
         let interior_size = y_dim * x_dim;
 
         if (interior_size as usize) < machines.len() {
@@ -23,12 +23,12 @@ impl Facility {
         let mut shuffled_facility_indices: Vec<u64> = (0..interior_size).collect();
         shuffled_facility_indices.shuffle(&mut rng);
 
-        let interior = zip(shuffled_facility_indices, machines).into_iter().fold(
+        let interior = zip(shuffled_facility_indices, machines).fold(
             vec![None; interior_size as usize],
             |mut acc_vec: Vec<Option<i64>>, indices| {
                 let (facility_index, machine) = indices;
 
-                acc_vec[facility_index as usize] = Some(machine);
+                acc_vec[facility_index as usize] = Some(*machine);
                 acc_vec
             },
         );
