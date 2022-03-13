@@ -5,8 +5,8 @@ pub struct FacilityLayout {
 
 #[derive(Debug)]
 pub struct FacilityFlow {
-    pub source: i64,
-    pub dest: i64,
-    pub amount: i64,
-    pub cost: i64,
+    pub source: u64,
+    pub dest: u64,
+    pub amount: u64,
+    pub cost: u64,
 }

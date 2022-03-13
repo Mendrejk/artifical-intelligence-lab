@@ -3,19 +3,20 @@ use crate::facility_layout::FacilityLayout;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+use crate::facility_configuration::Dimensions;
 use std::iter::zip;
 
 #[derive(Debug)]
 pub struct Facility {
-    interior: FacilityInterior<i64>,
+    interior: FacilityInterior<u64>,
 }
 
 impl Facility {
     // generates a new facility with random machine arrangement
-    pub fn generate_randomised_facility(y_dim: u64, x_dim: u64, machines: &[i64]) -> Self {
-        let interior_size = y_dim * x_dim;
+    pub fn generate_randomised_facility(dimensions: &Dimensions) -> Self {
+        let interior_size = dimensions.height * dimensions.width;
 
-        if (interior_size as usize) < machines.len() {
+        if (interior_size as usize) < dimensions.machines.len() {
             panic!("The interior must be able to fit all of the machines!")
         }
 
@@ -23,9 +24,9 @@ impl Facility {
         let mut shuffled_facility_indices: Vec<u64> = (0..interior_size).collect();
         shuffled_facility_indices.shuffle(&mut rng);
 
-        let interior = zip(shuffled_facility_indices, machines).fold(
+        let interior = zip(shuffled_facility_indices, &dimensions.machines).fold(
             vec![None; interior_size as usize],
-            |mut acc_vec: Vec<Option<i64>>, indices| {
+            |mut acc_vec: Vec<Option<u64>>, indices| {
                 let (facility_index, machine) = indices;
 
                 acc_vec[facility_index as usize] = Some(*machine);
@@ -34,21 +35,21 @@ impl Facility {
         );
 
         Facility {
-            interior: FacilityInterior::new(interior, y_dim),
+            interior: FacilityInterior::new(interior, dimensions.height),
         }
     }
 
-    pub fn calculate_distance(&self, from: i64, to: i64) -> Option<i64> {
+    pub fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
         let (from_x, from_y) = self.interior.position(|&machine| machine == Some(from))?;
         let (to_x, to_y) = self.interior.position(|&machine| machine == Some(to))?;
 
         Some(
             ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
-                as i64,
+                as u64,
         )
     }
 
-    pub fn calculate_fitness(&self, facility_layout: FacilityLayout) -> i64 {
+    pub fn calculate_fitness(&self, facility_layout: FacilityLayout) -> u64 {
         facility_layout
             .facility_flows
             .iter()

@@ -28,9 +28,9 @@ pub fn parse_flows(flow_file_path: &str, cost_file_path: &str) -> FacilityLayout
 
 fn parse_facility_flow(flow: &Value, cost: &Value) -> FacilityFlow {
     FacilityFlow {
-        source: flow["source"].as_i64().unwrap(),
-        dest: flow["dest"].as_i64().unwrap(),
-        amount: flow["amount"].as_i64().unwrap(),
-        cost: cost["cost"].as_i64().unwrap(),
+        source: flow["source"].as_u64().unwrap(),
+        dest: flow["dest"].as_u64().unwrap(),
+        amount: flow["amount"].as_u64().unwrap(),
+        cost: cost["cost"].as_u64().unwrap(),
     }
 }
