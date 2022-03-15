@@ -2,6 +2,7 @@ use crate::Facility;
 use rand::seq::SliceRandom;
 use rand::Rng;
 
+#[derive(Debug)]
 pub struct Specimen {
     pub facility: Facility,
     pub fitness: u64,
@@ -26,7 +27,7 @@ pub struct Population {
 
 impl Population {
     pub fn select_by_tournament(&self, tournament_size: u64) -> Result<&Specimen, &'static str> {
-        if tournament_size as usize >= self.specimens.len() {
+        if tournament_size as usize > self.specimens.len() {
             return Err("The tournament size must be less than or equal the total specimen count.");
         }
 
@@ -59,6 +60,9 @@ impl Population {
             let likelihood = specimen.likelihood.unwrap_or(0.0);
 
             specimen.likelihood = Some(likelihood / likelihood_sum);
+
+            let likelihood = specimen.likelihood.unwrap_or(0.0);
+
             current_likelihood_bound += likelihood;
             specimen.likelihood_bound = Some(current_likelihood_bound);
         }
