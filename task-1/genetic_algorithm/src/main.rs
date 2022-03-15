@@ -1,16 +1,40 @@
 use crate::facility::Facility;
-use crate::facility_configuration::FacilityConfig;
+use crate::facility_configuration::{Dimensions, FacilityConfig};
+use crate::facility_layout::FacilityLayout;
 use crate::flow_parser::parse_flows;
+use crate::specimen::Specimen;
 
 mod facility;
 mod facility_configuration;
 mod facility_layout;
 mod flow_parser;
+mod specimen;
 
 fn main() {
     let easy_config = FacilityConfig::get_easy_config().unwrap();
+    let population_size: u32 = 20;
 
-    let facility_flow = parse_flows(easy_config.get_flow_path(), easy_config.get_cost_path());
-    let facility = Facility::generate_randomised_facility(&easy_config.dimensions);
-    println!("{:?}", facility.calculate_fitness(facility_flow));
+    let facility_layout = parse_flows(easy_config.get_flow_path(), easy_config.get_cost_path());
+
+    let facilities = generate_randomised_population(&easy_config.dimensions, population_size);
+    let specimens = fit_population(facilities, &facility_layout);
+    for specimen in specimens {
+        println!("{}", specimen.fitness);
+    }
+}
+
+fn generate_randomised_population(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
+    (0..population_size)
+        .map(|_x| Facility::generate_randomised_facility(dimensions))
+        .collect()
+}
+
+fn fit_population(facility_population: Vec<Facility>, layout: &FacilityLayout) -> Vec<Specimen> {
+    facility_population
+        .into_iter()
+        .map(|facility| Specimen {
+            fitness: facility.calculate_fitness(layout),
+            facility,
+        })
+        .collect()
 }

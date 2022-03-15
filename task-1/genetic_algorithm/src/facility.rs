@@ -49,7 +49,7 @@ impl Facility {
         )
     }
 
-    pub fn calculate_fitness(&self, facility_layout: FacilityLayout) -> u64 {
+    pub fn calculate_fitness(&self, facility_layout: &FacilityLayout) -> u64 {
         facility_layout
             .facility_flows
             .iter()
