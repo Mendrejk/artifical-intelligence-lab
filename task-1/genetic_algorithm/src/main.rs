@@ -32,9 +32,6 @@ fn generate_randomised_population(dimensions: &Dimensions, population_size: u32)
 fn fit_population(facility_population: Vec<Facility>, layout: &FacilityLayout) -> Vec<Specimen> {
     facility_population
         .into_iter()
-        .map(|facility| Specimen {
-            fitness: facility.calculate_fitness(layout),
-            facility,
-        })
+        .map(|facility| Specimen::new(facility, facility.calculate_fitness(layout)))
         .collect()
 }
