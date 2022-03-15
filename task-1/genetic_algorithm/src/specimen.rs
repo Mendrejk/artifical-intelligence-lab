@@ -38,14 +38,14 @@ impl Population {
             .ok_or("There are no specimens to choose from.")
     }
 
-    pub fn select_by_roulette(&self) -> Result<&Specimen, &'static str> {
+    pub fn select_by_roulette(&mut self) -> Result<&Specimen, &'static str> {
         let total_fitness = self
             .specimens
             .iter()
             .fold(0, |sum_acc, specimen| sum_acc + specimen.fitness);
 
         // TODO functionally?
-        for mut specimen in self.specimens {
+        for mut specimen in &mut self.specimens {
             specimen.likelihood = Some(1.0 - (specimen.fitness as f32) / (total_fitness as f32));
         }
 
@@ -55,12 +55,12 @@ impl Population {
         });
 
         let mut current_likelihood_bound = 0.0;
-        for mut specimen in self.specimens {
+        for mut specimen in &mut self.specimens {
             let likelihood = specimen.likelihood.unwrap_or(0.0);
 
             specimen.likelihood = Some(likelihood / likelihood_sum);
             current_likelihood_bound += likelihood;
-            specimen.likelihood_bound = Some(current_likelihood_bound.clone());
+            specimen.likelihood_bound = Some(current_likelihood_bound);
         }
 
         // get the roulette guess
