@@ -21,6 +21,9 @@ fn main() {
 
     println!("{}", population.select_by_tournament(5).unwrap().fitness);
     println!("{}", population.select_by_roulette().unwrap().fitness);
+
+    println!("---------- crossover: ----------");
+    println!("{:?}", test_crossover());
 }
 
 fn generate_randomised_population(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
@@ -39,4 +42,19 @@ fn fit_population(facility_population: Vec<Facility>, layout: &FacilityLayout) -
             })
             .collect(),
     }
+}
+
+fn test_crossover() {
+    let test_dimensions = Dimensions {
+        width: 3,
+        height: 3,
+        machines: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+    };
+
+    let test_population = generate_randomised_population(&test_dimensions, 2);
+    let crossover = test_population[0].crossover(&test_population[1]);
+
+    println!("first: {:?}", test_population[0]);
+    println!("second: {:?}", test_population[1]);
+    println!("crossover: {:?}", crossover);
 }

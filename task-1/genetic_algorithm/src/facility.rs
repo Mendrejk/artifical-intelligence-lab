@@ -1,7 +1,8 @@
 use crate::facility_layout::FacilityLayout;
+use std::collections::HashSet;
 
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 use crate::facility_configuration::Dimensions;
 use std::iter::zip;
@@ -62,6 +63,30 @@ impl Facility {
                         * facility_flow.cost
             })
     }
+
+    pub fn crossover(&self, other: &Facility) -> Facility {
+        // TODO - check if both interiors are of same dimensions
+
+        let mut rng = rand::thread_rng();
+        // crossover takes place on this row, and all to the bottom of it
+        // exclude the 0th row, so that crossover always takes place
+        let crossover_row = rng.gen_range(1..self.interior.get_height());
+        let mut crossover_interior = self.interior.crossover(&other.interior, crossover_row);
+
+        // normalize the crossover
+        // TODO this should probably be in another function?
+        let mut uniques_in_parent = self.interior.get_uniques();
+        let uniques_in_crossover = crossover_interior.get_uniques();
+
+        uniques_in_parent.retain(|x| !uniques_in_crossover.contains(x));
+        uniques_in_parent.shuffle(&mut rng);
+
+        crossover_interior.remove_duplicates(uniques_in_parent);
+
+        Facility {
+            interior: crossover_interior,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -83,5 +108,60 @@ impl<T> FacilityInterior<T> {
             .iter()
             .position(predicate)
             .map(|i| (i as u64 / self.width, i as u64 % self.width))
+    }
+
+    pub fn get_height(&self) -> u64 {
+        (self.interior.len() as u64) / self.width
+    }
+}
+
+impl FacilityInterior<u64> {
+    pub fn crossover(
+        &self,
+        other: &FacilityInterior<u64>,
+        crossover_row: u64,
+    ) -> FacilityInterior<u64> {
+        // TODO less imperatively?
+        let mut crossover_interior = Vec::new();
+
+        for i in 0..(crossover_row * self.width) {
+            crossover_interior.push(self.interior[(i as usize)]);
+        }
+
+        // FIXME usize -> u64 cast potentially unsafe!
+        for i in (crossover_row * self.width)..(self.interior.len() as u64) {
+            crossover_interior.push(other.interior[(i as usize)]);
+        }
+
+        FacilityInterior {
+            interior: crossover_interior,
+            width: self.width,
+        }
+    }
+
+    pub fn get_uniques(&self) -> Vec<u64> {
+        let mut uniques: Vec<u64> = Vec::new();
+        for val in &self.interior {
+            if !uniques.contains(&val.unwrap()) {
+                uniques.push(val.unwrap());
+            }
+        }
+
+        uniques
+    }
+
+    pub fn remove_duplicates(&mut self, mut free_machines: Vec<u64>) {
+        let mut visited_elems: HashSet<u64> = HashSet::new();
+
+        for i in 0..self.interior.len() {
+            let elem = self.interior[i];
+
+            if visited_elems.contains(&elem.unwrap()) {
+                self.interior[i] = Some(free_machines[0]);
+                free_machines.swap_remove(0);
+            }
+
+            visited_elems.insert(elem.unwrap());
+        }
     }
 }
