@@ -9,7 +9,8 @@ use std::iter::zip;
 
 #[derive(Debug)]
 pub struct Facility {
-    interior: FacilityInterior<u64>,
+    interior: Vec<Option<u64>>,
+    width: u64,
 }
 
 impl Facility {
@@ -36,13 +37,14 @@ impl Facility {
         );
 
         Facility {
-            interior: FacilityInterior::new(interior, dimensions.height),
+            interior,
+            width: dimensions.width,
         }
     }
 
     pub fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
-        let (from_x, from_y) = self.interior.position(|&machine| machine == Some(from))?;
-        let (to_x, to_y) = self.interior.position(|&machine| machine == Some(to))?;
+        let (from_x, from_y) = self.position(|&machine| machine == Some(from))?;
+        let (to_x, to_y) = self.position(|&machine| machine == Some(to))?;
 
         Some(
             ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
@@ -70,39 +72,25 @@ impl Facility {
         let mut rng = rand::thread_rng();
         // crossover takes place on this row, and all to the bottom of it
         // exclude the 0th row, so that crossover always takes place
-        let crossover_row = rng.gen_range(1..self.interior.get_height());
-        let mut crossover_interior = self.interior.crossover(&other.interior, crossover_row);
+        let crossover_row = rng.gen_range(1..self.get_height());
+        let mut crossover_facility = self.create_crossover(other, crossover_row);
 
         // normalize the crossover
         // TODO this should probably be in another function?
-        let mut uniques_in_parent = self.interior.get_uniques();
-        let uniques_in_crossover = crossover_interior.get_uniques();
+        let mut uniques_in_parent = self.get_uniques();
+        let uniques_in_crossover = crossover_facility.get_uniques();
 
         uniques_in_parent.retain(|x| !uniques_in_crossover.contains(x));
         uniques_in_parent.shuffle(&mut rng);
 
-        crossover_interior.remove_duplicates(uniques_in_parent);
+        crossover_facility.remove_duplicates(uniques_in_parent);
 
-        Facility {
-            interior: crossover_interior,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct FacilityInterior<T> {
-    interior: Vec<Option<T>>,
-    width: u64,
-}
-
-impl<T> FacilityInterior<T> {
-    pub fn new(interior: Vec<Option<T>>, width: u64) -> Self {
-        FacilityInterior { interior, width }
+        crossover_facility
     }
 
     pub fn position<P>(&self, predicate: P) -> Option<(u64, u64)>
     where
-        P: FnMut(&Option<T>) -> bool,
+        P: FnMut(&Option<u64>) -> bool,
     {
         self.interior
             .iter()
@@ -112,31 +100,6 @@ impl<T> FacilityInterior<T> {
 
     pub fn get_height(&self) -> u64 {
         (self.interior.len() as u64) / self.width
-    }
-}
-
-impl FacilityInterior<u64> {
-    pub fn crossover(
-        &self,
-        other: &FacilityInterior<u64>,
-        crossover_row: u64,
-    ) -> FacilityInterior<u64> {
-        // TODO less imperatively?
-        let mut crossover_interior = Vec::new();
-
-        for i in 0..(crossover_row * self.width) {
-            crossover_interior.push(self.interior[(i as usize)]);
-        }
-
-        // FIXME usize -> u64 cast potentially unsafe!
-        for i in (crossover_row * self.width)..(self.interior.len() as u64) {
-            crossover_interior.push(other.interior[(i as usize)]);
-        }
-
-        FacilityInterior {
-            interior: crossover_interior,
-            width: self.width,
-        }
     }
 
     pub fn get_uniques(&self) -> Vec<u64> {
@@ -162,6 +125,25 @@ impl FacilityInterior<u64> {
             }
 
             visited_elems.insert(elem.unwrap());
+        }
+    }
+
+    fn create_crossover(&self, other: &Facility, crossover_row: u64) -> Facility {
+        // TODO less imperatively?
+        let mut crossover = Vec::new();
+
+        for i in 0..(crossover_row * self.width) {
+            crossover.push(self.interior[(i as usize)]);
+        }
+
+        // FIXME usize -> u64 cast potentially unsafe!
+        for i in (crossover_row * self.width)..(self.interior.len() as u64) {
+            crossover.push(other.interior[(i as usize)]);
+        }
+
+        Facility {
+            interior: crossover,
+            width: self.width,
         }
     }
 }
