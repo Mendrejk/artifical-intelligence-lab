@@ -42,16 +42,6 @@ impl Facility {
         }
     }
 
-    pub fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
-        let (from_x, from_y) = self.position(|&machine| machine == Some(from))?;
-        let (to_x, to_y) = self.position(|&machine| machine == Some(to))?;
-
-        Some(
-            ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
-                as u64,
-        )
-    }
-
     pub fn calculate_fitness(&self, facility_layout: &FacilityLayout) -> u64 {
         facility_layout
             .facility_flows
@@ -88,7 +78,17 @@ impl Facility {
         crossover_facility
     }
 
-    pub fn position<P>(&self, predicate: P) -> Option<(u64, u64)>
+    fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
+        let (from_x, from_y) = self.position(|&machine| machine == Some(from))?;
+        let (to_x, to_y) = self.position(|&machine| machine == Some(to))?;
+
+        Some(
+            ((from_x as isize - to_x as isize).abs() + (from_y as isize - to_y as isize).abs())
+                as u64,
+        )
+    }
+
+    fn position<P>(&self, predicate: P) -> Option<(u64, u64)>
     where
         P: FnMut(&Option<u64>) -> bool,
     {
@@ -98,34 +98,8 @@ impl Facility {
             .map(|i| (i as u64 / self.width, i as u64 % self.width))
     }
 
-    pub fn get_height(&self) -> u64 {
+    fn get_height(&self) -> u64 {
         (self.interior.len() as u64) / self.width
-    }
-
-    pub fn get_uniques(&self) -> Vec<u64> {
-        let mut uniques: Vec<u64> = Vec::new();
-        for val in &self.interior {
-            if !uniques.contains(&val.unwrap()) {
-                uniques.push(val.unwrap());
-            }
-        }
-
-        uniques
-    }
-
-    pub fn remove_duplicates(&mut self, mut free_machines: Vec<u64>) {
-        let mut visited_elems: HashSet<u64> = HashSet::new();
-
-        for i in 0..self.interior.len() {
-            let elem = self.interior[i];
-
-            if visited_elems.contains(&elem.unwrap()) {
-                self.interior[i] = Some(free_machines[0]);
-                free_machines.swap_remove(0);
-            }
-
-            visited_elems.insert(elem.unwrap());
-        }
     }
 
     fn create_crossover(&self, other: &Facility, crossover_row: u64) -> Facility {
@@ -144,6 +118,32 @@ impl Facility {
         Facility {
             interior: crossover,
             width: self.width,
+        }
+    }
+
+    fn get_uniques(&self) -> Vec<u64> {
+        let mut uniques: Vec<u64> = Vec::new();
+        for val in &self.interior {
+            if !uniques.contains(&val.unwrap()) {
+                uniques.push(val.unwrap());
+            }
+        }
+
+        uniques
+    }
+
+    fn remove_duplicates(&mut self, mut free_machines: Vec<u64>) {
+        let mut visited_elems: HashSet<u64> = HashSet::new();
+
+        for i in 0..self.interior.len() {
+            let elem = self.interior[i];
+
+            if visited_elems.contains(&elem.unwrap()) {
+                self.interior[i] = Some(free_machines[0]);
+                free_machines.swap_remove(0);
+            }
+
+            visited_elems.insert(elem.unwrap());
         }
     }
 }
