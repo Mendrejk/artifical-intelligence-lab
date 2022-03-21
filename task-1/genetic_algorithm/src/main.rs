@@ -24,6 +24,9 @@ fn main() {
 
     println!("---------- crossover: ----------");
     println!("{:?}", test_crossover());
+
+    println!("---------- mutation: ----------");
+    println!("{:?}", test_mutation());
 }
 
 fn generate_randomised_population(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
@@ -57,4 +60,18 @@ fn test_crossover() {
     println!("first: {:?}", test_population[0]);
     println!("second: {:?}", test_population[1]);
     println!("crossover: {:?}", crossover);
+}
+
+fn test_mutation() {
+    let test_dimensions = Dimensions {
+        width: 3,
+        height: 3,
+        machines: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+    };
+
+    let mut test_population = generate_randomised_population(&test_dimensions, 1);
+    println!("before mutation: {:?}", test_population[0]);
+
+    test_population[0].mutate(5, 8);
+    println!("after mutation: {:?}", test_population[0]);
 }

@@ -2,7 +2,7 @@ use crate::facility_layout::FacilityLayout;
 use std::collections::HashSet;
 
 use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 
 use crate::facility_configuration::Dimensions;
 use std::iter::zip;
@@ -22,7 +22,7 @@ impl Facility {
             panic!("The interior must be able to fit all of the machines!")
         }
 
-        let mut rng = thread_rng();
+        let mut rng = rand::thread_rng();
         let mut shuffled_facility_indices: Vec<u64> = (0..interior_size).collect();
         shuffled_facility_indices.shuffle(&mut rng);
 
@@ -65,17 +65,45 @@ impl Facility {
         let crossover_row = rng.gen_range(1..self.get_height());
         let mut crossover_facility = self.create_crossover(other, crossover_row);
 
-        // normalize the crossover
-        // TODO this should probably be in another function?
-        let mut uniques_in_parent = self.get_uniques();
-        let uniques_in_crossover = crossover_facility.get_uniques();
-
-        uniques_in_parent.retain(|x| !uniques_in_crossover.contains(x));
-        uniques_in_parent.shuffle(&mut rng);
-
-        crossover_facility.remove_duplicates(uniques_in_parent);
+        // normalise the crossover
+        crossover_facility.normalise(self.get_uniques());
 
         crossover_facility
+    }
+
+    // mutates every cell by +-1 with a mutation_factor probability
+    // TODO don't assume cells are values [n,m] with offset = 1? use cell_vec instead
+    pub fn mutate(&mut self, mutation_factor: u8, max_cell_value: u64) {
+        // TODO check if 0 < mutation_factor <= 100
+
+        let overflow = max_cell_value + 1;
+        let mut rng = rand::thread_rng();
+
+        let original_uniques = self.get_uniques();
+
+        self.interior = self
+            .interior
+            .iter()
+            .map(|elem| match elem {
+                Some(value) => {
+                    if rng.gen_range(0..100) < mutation_factor {
+                        if rng.gen_bool(0.5) {
+                            Some((value + 1) % overflow)
+                            // TODO potentially unsafe cast?
+                        } else if (*value as i64) - 1 < 0 {
+                            Some(value - 1 + overflow)
+                        } else {
+                            Some(value - 1)
+                        }
+                    } else {
+                        Some(*value)
+                    }
+                }
+                None => None,
+            })
+            .collect();
+
+        self.normalise(original_uniques);
     }
 
     fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
@@ -130,6 +158,17 @@ impl Facility {
         }
 
         uniques
+    }
+
+    fn normalise(&mut self, mut uniques_in_parent: Vec<u64>) {
+        let mut rng = rand::thread_rng();
+
+        let uniques_in_normalised = self.get_uniques();
+
+        uniques_in_parent.retain(|x| !uniques_in_normalised.contains(x));
+        uniques_in_parent.shuffle(&mut rng);
+
+        self.remove_duplicates(uniques_in_parent);
     }
 
     fn remove_duplicates(&mut self, mut free_machines: Vec<u64>) {
