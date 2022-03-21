@@ -56,19 +56,22 @@ impl Facility {
             })
     }
 
-    pub fn crossover(&self, other: &Facility) -> Facility {
+    pub fn crossover(&self, other: &Facility) -> (Facility, Facility) {
         // TODO - check if both interiors are of same dimensions
 
         let mut rng = rand::thread_rng();
         // crossover takes place on this row, and all to the bottom of it
         // exclude the 0th row, so that crossover always takes place
         let crossover_row = rng.gen_range(1..self.get_height());
-        let mut crossover_facility = self.create_crossover(other, crossover_row);
 
-        // normalise the crossover
-        crossover_facility.normalise(self.get_uniques());
+        let mut self_crossover = self.create_crossover(other, crossover_row);
+        let mut other_crossover = other.create_crossover(self, crossover_row);
 
-        crossover_facility
+        // normalise the crossovers
+        self_crossover.normalise(self.get_uniques());
+        other_crossover.normalise(other.get_uniques());
+
+        (self_crossover, other_crossover)
     }
 
     // mutates every cell by +-1 with a mutation_factor probability

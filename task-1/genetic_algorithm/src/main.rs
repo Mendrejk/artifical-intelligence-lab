@@ -1,3 +1,6 @@
+// TODO ebable and fix all of those... Remember to run 'cargo clean' first
+//#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+
 use crate::facility::Facility;
 use crate::facility_configuration::{Dimensions, FacilityConfig};
 use crate::facility_layout::FacilityLayout;
@@ -23,10 +26,10 @@ fn main() {
     println!("{}", population.select_by_roulette().unwrap().fitness);
 
     println!("---------- crossover: ----------");
-    println!("{:?}", test_crossover());
+    test_crossover();
 
     println!("---------- mutation: ----------");
-    println!("{:?}", test_mutation());
+    test_mutation();
 }
 
 fn generate_randomised_population(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
@@ -59,7 +62,8 @@ fn test_crossover() {
 
     println!("first: {:?}", test_population[0]);
     println!("second: {:?}", test_population[1]);
-    println!("crossover: {:?}", crossover);
+    println!("first crossover: {:?}", crossover.0);
+    println!("second crossover: {:?}", crossover.1);
 }
 
 fn test_mutation() {
