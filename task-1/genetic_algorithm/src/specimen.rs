@@ -1,9 +1,9 @@
-use crate::{generate_randomised_facilities, Dimensions, Facility, FacilityConfig, FacilityLayout};
+use crate::{generate_randomised_facilities, Dimensions, Facility, FacilityLayout};
 
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Specimen {
     pub facility: Facility,
     pub fitness: u64,
@@ -106,9 +106,9 @@ impl Population {
             tournament_size: u64,
             total_runs: u32,
             runs_elapsed: u32,
-        ) {
+        ) -> Result<u32, &'static str> {
             if runs_elapsed == total_runs {
-                return???
+                return Err("TODO");
             }
 
             // step 1. - selection
@@ -138,10 +138,22 @@ impl Population {
             crossover_specimens.shuffle(&mut rng);
 
             if crossover_specimens.len() % 2 != 0 {
-                new_population.push(crossover_specimens.pop()?.clone());
+                new_population.push(crossover_specimens.pop().ok_or("TODO")?.clone());
             }
 
-            crossover_specimens.group_by(|specimen, _| specimen / )
+            // crossover_specimens.group_by(|specimen, _| specimen / )
+            // the actual crossover takes place here
+            new_population.append(
+                crossover_specimens
+                    .chunks_exact(2)
+                    .flat_map(|crossover_chunk_iter| {
+                        let [first, second] = crossover_chunk_iter.try_into()?;
+                        let result = first.facility.crossover(second.facility);
+
+                        vec![result.0, result.1]
+                    })
+                    .collect(),
+            );
 
             1
         }
