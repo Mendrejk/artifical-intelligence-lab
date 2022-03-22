@@ -1,4 +1,4 @@
-// TODO ebable and fix all of those... Remember to run 'cargo clean' first
+// TODO enable and fix all of those... Remember to run 'cargo clean' first
 //#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 
 use crate::facility::Facility;
@@ -19,8 +19,8 @@ fn main() {
 
     let facility_layout = parse_flows(easy_config.get_flow_path(), easy_config.get_cost_path());
 
-    let facilities = generate_randomised_population(&easy_config.dimensions, population_size);
-    let mut population = fit_population(facilities, &facility_layout);
+    let facilities = generate_randomised_facilities(&easy_config.dimensions, population_size);
+    let mut population = Population::fit_facilities(facilities, &facility_layout);
 
     println!("{}", population.select_by_tournament(5).unwrap().fitness);
     println!("{}", population.select_by_roulette().unwrap().fitness);
@@ -32,22 +32,10 @@ fn main() {
     test_mutation();
 }
 
-fn generate_randomised_population(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
+fn generate_randomised_facilities(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
     (0..population_size)
         .map(|_x| Facility::generate_randomised_facility(dimensions))
         .collect()
-}
-
-fn fit_population(facility_population: Vec<Facility>, layout: &FacilityLayout) -> Population {
-    Population {
-        specimens: facility_population
-            .into_iter()
-            .map(|facility| {
-                let fitness = facility.calculate_fitness(layout);
-                Specimen::new(facility, fitness)
-            })
-            .collect(),
-    }
 }
 
 fn test_crossover() {
@@ -57,11 +45,11 @@ fn test_crossover() {
         machines: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
     };
 
-    let test_population = generate_randomised_population(&test_dimensions, 2);
-    let crossover = test_population[0].crossover(&test_population[1]);
+    let test_facilities = generate_randomised_facilities(&test_dimensions, 2);
+    let crossover = test_facilities[0].crossover(&test_facilities[1]);
 
-    println!("first: {:?}", test_population[0]);
-    println!("second: {:?}", test_population[1]);
+    println!("first: {:?}", test_facilities[0]);
+    println!("second: {:?}", test_facilities[1]);
     println!("first crossover: {:?}", crossover.0);
     println!("second crossover: {:?}", crossover.1);
 }
@@ -73,9 +61,9 @@ fn test_mutation() {
         machines: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
     };
 
-    let mut test_population = generate_randomised_population(&test_dimensions, 1);
-    println!("before mutation: {:?}", test_population[0]);
+    let mut test_facilities = generate_randomised_facilities(&test_dimensions, 1);
+    println!("before mutation: {:?}", test_facilities[0]);
 
-    test_population[0].mutate(5, 8);
-    println!("after mutation: {:?}", test_population[0]);
+    test_facilities[0].mutate(5, 8);
+    println!("after mutation: {:?}", test_facilities[0]);
 }

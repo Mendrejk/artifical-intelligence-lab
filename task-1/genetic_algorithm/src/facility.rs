@@ -7,7 +7,7 @@ use rand::Rng;
 use crate::facility_configuration::Dimensions;
 use std::iter::zip;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Facility {
     interior: Vec<Option<u64>>,
     width: u64,
