@@ -7,18 +7,11 @@ use rand::Rng;
 pub struct Specimen {
     pub facility: Facility,
     pub fitness: u64,
-    likelihood: Option<f32>, // TODO this should maybe be calculated at creation?
-    likelihood_bound: Option<f32>,
 }
 
 impl Specimen {
     pub fn new(facility: Facility, fitness: u64) -> Self {
-        Specimen {
-            facility,
-            fitness,
-            likelihood: None,
-            likelihood_bound: None,
-        }
+        Specimen { facility, fitness }
     }
 }
 
@@ -52,32 +45,36 @@ impl Population {
             .ok_or("There are no specimens to choose from.")
     }
 
-    pub fn select_by_roulette(&mut self) -> Result<&Specimen, &'static str> {
+    pub fn select_by_roulette(&self) -> Result<&Specimen, &'static str> {
         let total_fitness = self
             .specimens
             .iter()
             .fold(0, |sum_acc, specimen| sum_acc + specimen.fitness);
 
-        // TODO functionally?
-        for mut specimen in &mut self.specimens {
-            specimen.likelihood = Some(1.0 - (specimen.fitness as f32) / (total_fitness as f32));
-        }
+        let mut roulette_specimens: Vec<RouletteSpecimen> = self
+            .specimens
+            .iter()
+            .map(|specimen| RouletteSpecimen {
+                specimen,
+                likelihood: 1.0 - (specimen.fitness as f32) / (total_fitness as f32),
+                likelihood_bound: None,
+            })
+            .collect();
 
         // normalize the likelihoods to sum up to 1
-        let likelihood_sum = self.specimens.iter().fold(0.0, |likelihood_acc, specimen| {
-            likelihood_acc + specimen.likelihood.unwrap_or(0.0)
-        });
+        let likelihood_sum = roulette_specimens
+            .iter()
+            .fold(0.0, |likelihood_acc, specimen| {
+                likelihood_acc + specimen.likelihood
+            });
 
+        // TODO functionally?
         let mut current_likelihood_bound = 0.0;
-        for mut specimen in &mut self.specimens {
-            let likelihood = specimen.likelihood.unwrap_or(0.0);
+        for mut roulette_specimen in &mut roulette_specimens {
+            roulette_specimen.likelihood /= likelihood_sum;
 
-            specimen.likelihood = Some(likelihood / likelihood_sum);
-
-            let likelihood = specimen.likelihood.unwrap_or(0.0);
-
-            current_likelihood_bound += likelihood;
-            specimen.likelihood_bound = Some(current_likelihood_bound);
+            current_likelihood_bound += roulette_specimen.likelihood;
+            roulette_specimen.likelihood_bound = Some(current_likelihood_bound);
         }
 
         // get the roulette guess
@@ -85,32 +82,41 @@ impl Population {
 
         let guess = rng.gen::<f32>();
 
-        self.specimens
+        roulette_specimens
             .iter()
             .find(|specimen| guess <= specimen.likelihood_bound.unwrap_or(0.0))
+            .map(|roulette_specimen| roulette_specimen.specimen)
             .ok_or("No specimen has likelihood_bound as high as the guess.")
     }
 
-    pub fn simulate_tournament(
+    pub fn simulate_tournament<F>(
         population_size: u32,
         dimensions: &Dimensions,
         facility_layout: &FacilityLayout,
-        tournament_size: u64,
+        selection_function: F,
         crossover_factor: f64,
         mutation_factor: f64,
         runs: u32,
-    ) -> Result<u64, &'static str> {
-        fn simulate(
+    ) -> Result<u64, &'static str>
+    where
+        F: Fn(&Population) -> Result<&Specimen, &'static str>,
+    {
+        // TODO fix this...
+        #[allow(clippy::too_many_arguments)]
+        fn simulate<F>(
             previous_population: Population,
             facility_layout: &FacilityLayout,
             crossover_factor: f64,
             mutation_factor: f64,
-            tournament_size: u64,
+            selection_function: F,
             // TODO this should probably be a field in Population?
             max_machine: u64,
             runs: u32,
             runs_elapsed: u32,
-        ) -> Result<u64, &'static str> {
+        ) -> Result<u64, &'static str>
+        where
+            F: Fn(&Population) -> Result<&Specimen, &'static str>,
+        {
             if runs_elapsed == runs {
                 return Ok(previous_population
                     .specimens
@@ -122,7 +128,7 @@ impl Population {
 
             // step 1. - selection
             let selection: Vec<&Specimen> = (0..previous_population.specimens.len())
-                .map(|_x| previous_population.select_by_tournament(tournament_size))
+                .map(|_x| selection_function(&previous_population))
                 .into_iter()
                 .collect::<Result<Vec<&Specimen>, &str>>()?;
 
@@ -184,7 +190,7 @@ impl Population {
                 facility_layout,
                 crossover_factor,
                 mutation_factor,
-                tournament_size,
+                selection_function,
                 max_machine,
                 runs,
                 runs_elapsed + 1,
@@ -207,10 +213,16 @@ impl Population {
             facility_layout,
             crossover_factor,
             mutation_factor,
-            tournament_size,
+            selection_function,
             max_machine,
             runs,
             0,
         )
     }
+}
+
+struct RouletteSpecimen<'a> {
+    pub specimen: &'a Specimen,
+    pub likelihood: f32,
+    pub likelihood_bound: Option<f32>, // TODO this should maybe be calculated at creation
 }

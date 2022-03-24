@@ -5,7 +5,7 @@ use crate::facility::Facility;
 use crate::facility_configuration::{Dimensions, FacilityConfig};
 use crate::facility_layout::FacilityLayout;
 use crate::flow_parser::parse_flows;
-use crate::specimen::Population;
+use crate::specimen::{Population, Specimen};
 
 mod facility;
 mod facility_configuration;
@@ -20,7 +20,7 @@ fn main() {
     let facility_layout = parse_flows(easy_config.get_flow_path(), easy_config.get_cost_path());
 
     let facilities = generate_randomised_facilities(&easy_config.dimensions, population_size);
-    let mut population = Population::fit_facilities(facilities, &facility_layout);
+    let population = Population::fit_facilities(facilities, &facility_layout);
 
     println!("{}", population.select_by_tournament(5).unwrap().fitness);
     println!("{}", population.select_by_roulette().unwrap().fitness);
@@ -32,13 +32,19 @@ fn main() {
     test_mutation();
 
     println!("-------- tournament: --------");
+    // let specialised_tournament = |tournament_size| {
+    //     move |population| Population::select_by_tournament(population, tournament_size)
+    // };
+    let specialised_tournament: fn(&Population) -> Result<&Specimen, &'static str> =
+        |population| Population::select_by_tournament(population, 5);
+
     println!(
         "{:?}",
         Population::simulate_tournament(
             100,
             &easy_config.dimensions,
             &facility_layout,
-            5,
+            specialised_tournament,
             0.15,
             0.05,
             20
