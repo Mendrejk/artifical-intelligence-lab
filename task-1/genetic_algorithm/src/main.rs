@@ -5,7 +5,7 @@ use crate::facility::Facility;
 use crate::facility_configuration::{Dimensions, FacilityConfig};
 use crate::facility_layout::FacilityLayout;
 use crate::flow_parser::parse_flows;
-use crate::specimen::{Population, Specimen};
+use crate::specimen::Population;
 
 mod facility;
 mod facility_configuration;
@@ -30,6 +30,20 @@ fn main() {
 
     println!("---------- mutation: ----------");
     test_mutation();
+
+    println!("-------- tournament: --------");
+    println!(
+        "{:?}",
+        Population::simulate_tournament(
+            100,
+            &easy_config.dimensions,
+            &facility_layout,
+            5,
+            0.15,
+            0.05,
+            20
+        )
+    )
 }
 
 fn generate_randomised_facilities(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {
@@ -64,6 +78,6 @@ fn test_mutation() {
     let mut test_facilities = generate_randomised_facilities(&test_dimensions, 1);
     println!("before mutation: {:?}", test_facilities[0]);
 
-    test_facilities[0].mutate(5, 8);
+    test_facilities[0].mutate(0.15, 8);
     println!("after mutation: {:?}", test_facilities[0]);
 }

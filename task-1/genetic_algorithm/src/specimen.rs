@@ -96,36 +96,43 @@ impl Population {
         dimensions: &Dimensions,
         facility_layout: &FacilityLayout,
         tournament_size: u64,
+        crossover_factor: f64,
+        mutation_factor: f64,
         runs: u32,
-    ) -> Result<u32, &'static str> {
+    ) -> Result<u64, &'static str> {
         fn simulate(
             previous_population: Population,
-            layout: &FacilityLayout,
+            facility_layout: &FacilityLayout,
             crossover_factor: f64,
             mutation_factor: f64,
             tournament_size: u64,
-            total_runs: u32,
+            // TODO this should probably be a field in Population?
+            max_machine: u64,
+            runs: u32,
             runs_elapsed: u32,
-        ) -> Result<u32, &'static str> {
-            if runs_elapsed == total_runs {
-                return Err("TODO");
+        ) -> Result<u64, &'static str> {
+            if runs_elapsed == runs {
+                return Ok(previous_population
+                    .specimens
+                    .iter()
+                    .min_by(|first, second| first.fitness.cmp(&second.fitness))
+                    .ok_or("TODO")?
+                    .fitness);
             }
 
             // step 1. - selection
-            let selection = (0..previous_population.specimens.len())
-                .map(|_x| previous_population.select_by_tournament(tournament_size)?)
-                .collect();
+            let selection: Vec<&Specimen> = (0..previous_population.specimens.len())
+                .map(|_x| previous_population.select_by_tournament(tournament_size))
+                .into_iter()
+                .collect::<Result<Vec<&Specimen>, &str>>()?;
 
             // step 2. - crossover
             // each specimen is chosen for crossover with a given probability
             // they are then connected into pairs
             // if there is an uneven amount of crossover specimens, the last one is just copied
-
-            // TODO maybe pass this instead of creating in every iteration?
-            let mut rng = rand::thread_rng();
-
             let mut new_population: Vec<Specimen> = Vec::new();
-            let mut crossover_specimens: Vec<Specimen> = Vec::new();
+            let mut crossover_specimens: Vec<&Specimen> = Vec::new();
+            let mut rng = rand::thread_rng();
 
             for specimen in selection {
                 if rng.gen_bool(crossover_factor) {
@@ -141,21 +148,47 @@ impl Population {
                 new_population.push(crossover_specimens.pop().ok_or("TODO")?.clone());
             }
 
-            // crossover_specimens.group_by(|specimen, _| specimen / )
             // the actual crossover takes place here
             new_population.append(
-                crossover_specimens
+                &mut crossover_specimens
                     .chunks_exact(2)
                     .flat_map(|crossover_chunk_iter| {
-                        let [first, second] = crossover_chunk_iter.try_into()?;
-                        let result = first.facility.crossover(second.facility);
+                        // TODO remove unwrap?
+                        let [first, second]: [&Specimen; 2] =
+                            crossover_chunk_iter.try_into().unwrap();
+                        let result = first.facility.crossover(&second.facility);
 
-                        vec![result.0, result.1]
+                        Population::fit_facilities(vec![result.0, result.1], facility_layout)
+                            .specimens
                     })
                     .collect(),
             );
 
-            1
+            // step 3. - mutation
+            // each specimen is mutated with a given probability
+            for specimen in &mut new_population {
+                specimen.facility.mutate(mutation_factor, max_machine);
+            }
+
+            // TODO shouldn't this be the first step?
+            // step 3.5. - refit the population after mutation
+            for specimen in &mut new_population {
+                specimen.fitness = specimen.facility.calculate_fitness(facility_layout);
+            }
+
+            // step 4. - call the next iteration
+            simulate(
+                Population {
+                    specimens: new_population,
+                },
+                facility_layout,
+                crossover_factor,
+                mutation_factor,
+                tournament_size,
+                max_machine,
+                runs,
+                runs_elapsed + 1,
+            )
         }
 
         let starting_population = Population::fit_facilities(
@@ -163,6 +196,21 @@ impl Population {
             facility_layout,
         );
 
-        simulate(runs, 0);
+        let max_machine = *starting_population
+            .specimens
+            .first()
+            .and_then(|specimen| specimen.facility.find_max_machine())
+            .expect("TODO");
+
+        simulate(
+            starting_population,
+            facility_layout,
+            crossover_factor,
+            mutation_factor,
+            tournament_size,
+            max_machine,
+            runs,
+            0,
+        )
     }
 }

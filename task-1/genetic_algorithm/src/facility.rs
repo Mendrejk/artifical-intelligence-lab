@@ -76,7 +76,7 @@ impl Facility {
 
     // mutates every cell by +-1 with a mutation_factor probability
     // TODO don't assume cells are values [n,m] with offset = 1? use cell_vec instead
-    pub fn mutate(&mut self, mutation_factor: u8, max_cell_value: u64) {
+    pub fn mutate(&mut self, mutation_factor: f64, max_cell_value: u64) {
         // TODO check if 0 < mutation_factor <= 100
 
         let overflow = max_cell_value + 1;
@@ -89,12 +89,12 @@ impl Facility {
             .iter()
             .map(|elem| match elem {
                 Some(value) => {
-                    if rng.gen_range(0..100) < mutation_factor {
+                    if rng.gen_bool(mutation_factor) {
                         if rng.gen_bool(0.5) {
                             Some((value + 1) % overflow)
                             // TODO potentially unsafe cast?
                         } else if (*value as i64) - 1 < 0 {
-                            Some(value - 1 + overflow)
+                            Some(value + overflow - 1)
                         } else {
                             Some(value - 1)
                         }
@@ -107,6 +107,10 @@ impl Facility {
             .collect();
 
         self.normalise(original_uniques);
+    }
+
+    pub fn find_max_machine(&self) -> Option<&u64> {
+        self.interior.iter().flatten().max()
     }
 
     fn calculate_distance(&self, from: u64, to: u64) -> Option<u64> {
