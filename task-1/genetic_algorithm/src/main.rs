@@ -44,7 +44,7 @@ fn main() {
             100,
             &easy_config.dimensions,
             &facility_layout,
-            specialised_tournament,
+            Population::select_by_roulette,
             0.15,
             0.05,
             20

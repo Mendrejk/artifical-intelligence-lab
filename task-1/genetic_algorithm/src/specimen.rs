@@ -1,4 +1,6 @@
 use crate::{generate_randomised_facilities, Dimensions, Facility, FacilityLayout};
+use std::cmp::min;
+use std::cmp::Ordering::Equal;
 
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -46,33 +48,52 @@ impl Population {
     }
 
     pub fn select_by_roulette(&self) -> Result<&Specimen, &'static str> {
-        let total_fitness = self
-            .specimens
-            .iter()
-            .fold(0, |sum_acc, specimen| sum_acc + specimen.fitness);
+        let square_fitness_sum = self.specimens.iter().fold(0, |sum_acc, specimen| {
+            sum_acc + specimen.fitness * specimen.fitness
+        });
 
         let mut roulette_specimens: Vec<RouletteSpecimen> = self
             .specimens
             .iter()
             .map(|specimen| RouletteSpecimen {
                 specimen,
-                likelihood: 1.0 - (specimen.fitness as f32) / (total_fitness as f32),
+                likelihood: (specimen.fitness * specimen.fitness) as f32
+                    / (square_fitness_sum as f32),
                 likelihood_bound: None,
             })
             .collect();
 
-        // normalize the likelihoods to sum up to 1
-        let likelihood_sum = roulette_specimens
+        // find Q = min likelihood + max likelihood
+        // by using Q instead of the sum, the inverse likelihoods are not so flat
+        let min_max_square_sum = roulette_specimens
             .iter()
-            .fold(0.0, |likelihood_acc, specimen| {
-                likelihood_acc + specimen.likelihood
-            });
+            .min_by(|first, second| {
+                first
+                    .likelihood
+                    .partial_cmp(&second.likelihood)
+                    .unwrap_or(Equal)
+            })
+            .map(|min| min.likelihood)
+            .unwrap_or(0.0)
+            + roulette_specimens
+                .iter()
+                .max_by(|first, second| {
+                    first
+                        .likelihood
+                        .partial_cmp(&second.likelihood)
+                        .unwrap_or(Equal)
+                })
+                .map(|max| max.likelihood)
+                .unwrap_or(0.0);
+
+        // "inverse" the likelihoods
+        for roulette_specimen in &mut roulette_specimens {
+            roulette_specimen.likelihood = min_max_square_sum - roulette_specimen.likelihood
+        }
 
         // TODO functionally?
         let mut current_likelihood_bound = 0.0;
         for mut roulette_specimen in &mut roulette_specimens {
-            roulette_specimen.likelihood /= likelihood_sum;
-
             current_likelihood_bound += roulette_specimen.likelihood;
             roulette_specimen.likelihood_bound = Some(current_likelihood_bound);
         }
@@ -80,7 +101,7 @@ impl Population {
         // get the roulette guess
         let mut rng = rand::thread_rng();
 
-        let guess = rng.gen::<f32>();
+        let guess = rng.gen_range(0.0..=current_likelihood_bound);
 
         roulette_specimens
             .iter()
