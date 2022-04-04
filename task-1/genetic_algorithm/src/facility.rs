@@ -69,6 +69,7 @@ impl Facility {
 
         // normalise the crossovers
         let empties = self.count_empty_spaces();
+        // TODO - get_uniques() calls here can be replaces by .specimens.flatten()?
         self_crossover.normalise(self.get_uniques(), empties as u64);
         other_crossover.normalise(other.get_uniques(), empties as u64);
 

@@ -46,11 +46,11 @@ fn main() {
             1000,
             &config.dimensions,
             &facility_layout,
-            // Population::select_by_roulette,
-            specialised_tournament,
+            Population::select_by_roulette,
             0.15,
             0.05,
-            500
+            500,
+            "roulette.txt"
         )
     )
 }

@@ -1,6 +1,8 @@
 use crate::{generate_randomised_facilities, Dimensions, Facility, FacilityLayout};
-use std::cmp::min;
 use std::cmp::Ordering::Equal;
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -110,6 +112,8 @@ impl Population {
             .ok_or("No specimen has likelihood_bound as high as the guess.")
     }
 
+    // TODO fix this...
+    #[allow(clippy::too_many_arguments)]
     pub fn simulate_tournament<F>(
         population_size: u32,
         dimensions: &Dimensions,
@@ -118,6 +122,7 @@ impl Population {
         crossover_factor: f64,
         mutation_factor: f64,
         runs: u32,
+        file_name: &str,
     ) -> Result<u64, &'static str>
     where
         F: Fn(&Population) -> Result<&Specimen, &'static str>,
@@ -134,13 +139,20 @@ impl Population {
             max_machine: u64,
             runs: u32,
             runs_elapsed: u32,
+            file_name: &str,
         ) -> Result<u64, &'static str>
         where
             F: Fn(&Population) -> Result<&Specimen, &'static str>,
         {
-            // step 0. - save stats
-            Population::save_statistics(&previous_population.specimens);
+            // step 0. - write the simulation statistics
+            let stats = Population::calculate_statistics(&previous_population.specimens)
+                .unwrap_or((0, 0, 0.0, 0.0));
 
+            let mut file = OpenOptions::new().append(true).open(file_name).unwrap();
+            writeln!(file, "{},{},{},{}", stats.0, stats.1, stats.2, stats.3)
+                .expect("Unable to write file");
+
+            // check the exit condition
             if runs_elapsed == runs {
                 return Ok(previous_population
                     .specimens
@@ -218,6 +230,7 @@ impl Population {
                 max_machine,
                 runs,
                 runs_elapsed + 1,
+                file_name,
             )
         }
 
@@ -232,6 +245,8 @@ impl Population {
             .and_then(|specimen| specimen.facility.find_max_machine())
             .expect("TODO");
 
+        fs::write(file_name, "best,worst,average,deviation\n").expect("Unable to write file");
+
         simulate(
             starting_population,
             facility_layout,
@@ -241,29 +256,42 @@ impl Population {
             max_machine,
             runs,
             0,
+            file_name,
         )
     }
 
-    fn save_statistics(specimens: &[Specimen]) {
-        let best = specimens
+    fn calculate_statistics(specimens: &[Specimen]) -> Result<(u64, u64, f32, f32), &'static str> {
+        let best_fitness = specimens
             .iter()
             .min_by(|first, second| first.fitness.cmp(&second.fitness))
-            .unwrap()
+            .ok_or("TODO")?
             .fitness;
-
-        let worst = specimens
+        let worst_fitness = specimens
             .iter()
             .max_by(|first, second| first.fitness.cmp(&second.fitness))
-            .unwrap()
+            .ok_or("TODO")?
             .fitness;
-
-        let average = specimens
+        let average_fitness = specimens
             .iter()
             .map(|specimen| specimen.fitness)
             .sum::<u64>() as f32
-            / specimens.iter().len() as f32;
+            / specimens.len() as f32;
+        let standard_deviation = (specimens
+            .iter()
+            .map(|specimen| {
+                let diff = average_fitness - specimen.fitness as f32;
+                diff * diff
+            })
+            .sum::<f32>()
+            / specimens.len() as f32)
+            .sqrt();
 
-        println!("{}, {}, {}", best, worst, average);
+        Ok((
+            best_fitness,
+            worst_fitness,
+            average_fitness,
+            standard_deviation,
+        ))
     }
 }
 
