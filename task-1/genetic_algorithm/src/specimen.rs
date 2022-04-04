@@ -138,6 +138,9 @@ impl Population {
         where
             F: Fn(&Population) -> Result<&Specimen, &'static str>,
         {
+            // step 0. - save stats
+            Population::save_statistics(&previous_population.specimens);
+
             if runs_elapsed == runs {
                 return Ok(previous_population
                     .specimens
@@ -239,6 +242,28 @@ impl Population {
             runs,
             0,
         )
+    }
+
+    fn save_statistics(specimens: &[Specimen]) {
+        let best = specimens
+            .iter()
+            .min_by(|first, second| first.fitness.cmp(&second.fitness))
+            .unwrap()
+            .fitness;
+
+        let worst = specimens
+            .iter()
+            .max_by(|first, second| first.fitness.cmp(&second.fitness))
+            .unwrap()
+            .fitness;
+
+        let average = specimens
+            .iter()
+            .map(|specimen| specimen.fitness)
+            .sum::<u64>() as f32
+            / specimens.iter().len() as f32;
+
+        println!("{}, {}, {}", best, worst, average);
     }
 }
 

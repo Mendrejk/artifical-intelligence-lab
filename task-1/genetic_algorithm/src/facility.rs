@@ -68,8 +68,9 @@ impl Facility {
         let mut other_crossover = other.create_crossover(self, crossover_row);
 
         // normalise the crossovers
-        self_crossover.normalise(self.get_uniques());
-        other_crossover.normalise(other.get_uniques());
+        let empties = self.count_empty_spaces();
+        self_crossover.normalise(self.get_uniques(), empties as u64);
+        other_crossover.normalise(other.get_uniques(), empties as u64);
 
         (self_crossover, other_crossover)
     }
@@ -106,7 +107,7 @@ impl Facility {
             })
             .collect();
 
-        self.normalise(original_uniques);
+        self.normalise(original_uniques, self.count_empty_spaces() as u64);
     }
 
     pub fn find_max_machine(&self) -> Option<&u64> {
@@ -158,16 +159,16 @@ impl Facility {
 
     fn get_uniques(&self) -> Vec<u64> {
         let mut uniques: Vec<u64> = Vec::new();
-        for val in &self.interior {
-            if !uniques.contains(&val.unwrap()) {
-                uniques.push(val.unwrap());
+        for val in self.interior.iter().flatten() {
+            if !uniques.contains(val) {
+                uniques.push(*val);
             }
         }
 
         uniques
     }
 
-    fn normalise(&mut self, mut uniques_in_parent: Vec<u64>) {
+    fn normalise(&mut self, mut uniques_in_parent: Vec<u64>, empties_in_parent: u64) {
         let mut rng = rand::thread_rng();
 
         let uniques_in_normalised = self.get_uniques();
@@ -175,21 +176,47 @@ impl Facility {
         uniques_in_parent.retain(|x| !uniques_in_normalised.contains(x));
         uniques_in_parent.shuffle(&mut rng);
 
-        self.remove_duplicates(uniques_in_parent);
+        let missing_empties =
+            (self.count_empty_spaces() as i64 - empties_in_parent as i64).abs() as u64;
+
+        self.remove_duplicates(uniques_in_parent, missing_empties);
     }
 
-    fn remove_duplicates(&mut self, mut free_machines: Vec<u64>) {
+    fn remove_duplicates(&mut self, mut free_machines: Vec<u64>, mut missing_empties: u64) {
         let mut visited_elems: HashSet<u64> = HashSet::new();
 
         for i in 0..self.interior.len() {
             let elem = self.interior[i];
 
-            if visited_elems.contains(&elem.unwrap()) {
-                self.interior[i] = Some(free_machines[0]);
-                free_machines.swap_remove(0);
-            }
+            match elem {
+                None => continue,
+                Some(elem) => {
+                    if visited_elems.contains(&elem) {
+                        // handle not enough empty spaces
+                        if missing_empties > 0 {
+                            self.interior[i] = None;
+                            missing_empties -= 1;
+                        } else {
+                            self.interior[i] = Some(free_machines.swap_remove(0));
+                        }
+                    }
 
-            visited_elems.insert(elem.unwrap());
+                    visited_elems.insert(elem);
+                }
+            }
         }
+
+        // handle too many empty spaces
+        while !free_machines.is_empty() {
+            // replace the first empty space with the first machine
+            match self.interior.iter().position(|elem| elem.is_none()) {
+                Some(index) => self.interior[index] = Some(free_machines.swap_remove(0)),
+                None => continue,
+            }
+        }
+    }
+
+    fn count_empty_spaces(&self) -> usize {
+        self.interior.iter().filter(|elem| elem.is_none()).count()
     }
 }

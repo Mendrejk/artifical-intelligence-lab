@@ -12,7 +12,7 @@ impl FacilityConfig {
         machines: Vec<u64>,
     ) -> Result<Self, &'static str> {
         if machines.len() > (width * height) as usize {
-            return Err("Width * height must be greater than the machine count.");
+            return Err("Width * height must be greater or equal the machine count.");
         }
 
         Ok(FacilityConfig {
@@ -35,7 +35,27 @@ impl FacilityConfig {
             String::from("data/easy_cost.json"),
             3,
             3,
-            vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+            (0..9).collect(),
+        )
+    }
+
+    pub fn get_flat_config() -> Result<Self, &'static str> {
+        FacilityConfig::new(
+            String::from("data/flat_flow.json"),
+            String::from("data/flat_cost.json"),
+            1,
+            12,
+            (0..12).collect(),
+        )
+    }
+
+    pub fn get_hard_config() -> Result<Self, &'static str> {
+        FacilityConfig::new(
+            String::from("data/hard_flow.json"),
+            String::from("data/hard_cost.json"),
+            5,
+            6,
+            (0..24).collect(),
         )
     }
 

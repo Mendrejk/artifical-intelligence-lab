@@ -14,12 +14,14 @@ mod flow_parser;
 mod specimen;
 
 fn main() {
-    let easy_config = FacilityConfig::get_easy_config().unwrap();
+    // let config = FacilityConfig::get_easy_config().unwrap();
+    // let config = FacilityConfig::get_flat_config().unwrap();
+    let config = FacilityConfig::get_hard_config().unwrap();
     let population_size: u32 = 20;
 
-    let facility_layout = parse_flows(easy_config.get_flow_path(), easy_config.get_cost_path());
+    let facility_layout = parse_flows(config.get_flow_path(), config.get_cost_path());
 
-    let facilities = generate_randomised_facilities(&easy_config.dimensions, population_size);
+    let facilities = generate_randomised_facilities(&config.dimensions, population_size);
     let population = Population::fit_facilities(facilities, &facility_layout);
 
     println!("{}", population.select_by_tournament(5).unwrap().fitness);
@@ -41,13 +43,14 @@ fn main() {
     println!(
         "{:?}",
         Population::simulate_tournament(
-            100,
-            &easy_config.dimensions,
+            1000,
+            &config.dimensions,
             &facility_layout,
-            Population::select_by_roulette,
+            // Population::select_by_roulette,
+            specialised_tournament,
             0.15,
             0.05,
-            20
+            500
         )
     )
 }
