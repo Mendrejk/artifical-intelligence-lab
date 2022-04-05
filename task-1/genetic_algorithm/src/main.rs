@@ -6,6 +6,10 @@ use crate::facility_configuration::{Dimensions, FacilityConfig};
 use crate::facility_layout::FacilityLayout;
 use crate::flow_parser::parse_flows;
 use crate::specimen::{Population, Specimen};
+use rand::prelude::SliceRandom;
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 mod facility;
 mod facility_configuration;
@@ -15,8 +19,8 @@ mod specimen;
 
 fn main() {
     // let config = FacilityConfig::get_easy_config().unwrap();
-    // let config = FacilityConfig::get_flat_config().unwrap();
-    let config = FacilityConfig::get_hard_config().unwrap();
+    let config = FacilityConfig::get_flat_config().unwrap();
+    // let config = FacilityConfig::get_hard_config().unwrap();
     let population_size: u32 = 20;
 
     let facility_layout = parse_flows(config.get_flow_path(), config.get_cost_path());
@@ -40,19 +44,36 @@ fn main() {
     let specialised_tournament: fn(&Population) -> Result<&Specimen, &'static str> =
         |population| Population::select_by_tournament(population, 5);
 
-    println!(
-        "{:?}",
-        Population::simulate_tournament(
-            1000,
-            &config.dimensions,
-            &facility_layout,
-            Population::select_by_roulette,
-            0.15,
-            0.05,
-            500,
-            "roulette.txt"
-        )
-    )
+    let random_selection: fn(&Population) -> Result<&Specimen, &'static str> = |population| {
+        population
+            .specimens
+            .choose(&mut rand::thread_rng())
+            .ok_or("TODO")
+    };
+
+    let file_name = "tournament_flat_2.txt";
+
+    let mut file = OpenOptions::new().append(true).open(file_name).unwrap();
+
+    fs::write(file_name, "best,worst,average,deviation\n\n").expect("Unable to write file");
+
+    for _i in 0..10 {
+        println!(
+            "{:?}",
+            Population::simulate_tournament(
+                1000,
+                &config.dimensions,
+                &facility_layout,
+                specialised_tournament,
+                0.75,
+                0.25,
+                500,
+                file_name
+            )
+        );
+
+        writeln!(file).expect("Unable to write file");
+    }
 }
 
 fn generate_randomised_facilities(dimensions: &Dimensions, population_size: u32) -> Vec<Facility> {

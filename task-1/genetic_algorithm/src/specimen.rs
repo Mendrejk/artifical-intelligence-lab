@@ -245,8 +245,6 @@ impl Population {
             .and_then(|specimen| specimen.facility.find_max_machine())
             .expect("TODO");
 
-        fs::write(file_name, "best,worst,average,deviation\n").expect("Unable to write file");
-
         simulate(
             starting_population,
             facility_layout,
