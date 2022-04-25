@@ -1,9 +1,3 @@
-/*
-// domain -> [0, 1]
-// constraints -> [0,1, x] -> 0th row sum to 3, 1st column sum to 3
-// variables -> x x 1
-*/
-
 use crate::puzzle::{BinaryPuzzle, Puzzle};
 use std::fs::read_to_string;
 use std::str::Chars;
@@ -36,10 +30,9 @@ pub fn read_puzzle(puzzle_file: &PuzzleFile) -> Box<dyn Puzzle> {
             read_binary_puzzle(puzzle_file)
         }
         PuzzleFile::futoshiki_4x4 | PuzzleFile::futoshiki_5x5 | PuzzleFile::futoshiki_6x6 => {
-            Box::new(BinaryPuzzle {
-                variables: vec![],
-                domain: vec![],
-            }) // TODO
+            // Box::new(BinaryPuzzle::new(variables: vec![vec![]], domain: vec![]))
+            todo!()
+            // TODO
         }
     }
 }
@@ -61,5 +54,5 @@ fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
         })
         .collect();
 
-    Box::new(BinaryPuzzle { variables, domain }) // TODO
+    Box::new(BinaryPuzzle::new(variables, domain))
 }
