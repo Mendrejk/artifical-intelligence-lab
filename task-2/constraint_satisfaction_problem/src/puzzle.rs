@@ -7,12 +7,12 @@
 pub trait Puzzle {}
 
 pub struct BinaryPuzzle {
-    pub variables: Vec<Vec<Option<u64>>>,
-    pub domain: Vec<u64>,
+    pub variables: Vec<Vec<Option<u32>>>,
+    pub domain: Vec<u32>,
 }
 
 impl BinaryPuzzle {
-    fn new(variables: Vec<Vec<Option<u64>>>, domain: Vec<u64>) -> Self {
+    fn new(variables: Vec<Vec<Option<u32>>>, domain: Vec<u32>) -> Self {
         todo!()
     }
 }
