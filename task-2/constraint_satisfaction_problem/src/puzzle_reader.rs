@@ -5,8 +5,9 @@
 */
 
 use crate::puzzle::{BinaryPuzzle, Puzzle};
+use std::fs::read_to_string;
 
-enum PuzzleFile {
+pub enum PuzzleFile {
     binary_6x6,
     binary_8x8,
     binary_10x10,
@@ -16,7 +17,7 @@ enum PuzzleFile {
 }
 
 impl PuzzleFile {
-    fn file_path(&self) -> &str {
+    fn get_file_path(&self) -> &str {
         match *self {
             PuzzleFile::binary_6x6 => "binary_6x6",
             PuzzleFile::binary_8x8 => "binary_8x8",
@@ -34,11 +35,19 @@ pub fn read_puzzle(puzzle_file: &PuzzleFile) -> Box<dyn Puzzle> {
             read_binary_puzzle(puzzle_file)
         }
         PuzzleFile::futoshiki_4x4 | PuzzleFile::futoshiki_5x5 | PuzzleFile::futoshiki_6x6 => {
-            Puzzle // TODO
+            Box::new(BinaryPuzzle {
+                variables: vec![],
+                domain: vec![],
+            }) // TODO
         }
     }
 }
 
 fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
-    BinaryPuzzle // TODO
+    let data = read_to_string(puzzle_file.get_file_path()).unwrap();
+
+    Box::new(BinaryPuzzle {
+        variables: vec![],
+        domain: vec![],
+    }) // TODO
 }

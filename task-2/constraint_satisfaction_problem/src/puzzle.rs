@@ -4,11 +4,17 @@
 // variables -> x x 1
 */
 
-pub trait Puzzle {
-    fn new<T>(variables: Vec<Vec<T>>, domain: Vec<u64>) -> Self;
-}
+pub trait Puzzle {}
 
 pub struct BinaryPuzzle {
-    variables: Vec<Vec<Option<u64>>>,
-    domain: Vec<u64>,
+    pub variables: Vec<Vec<Option<u64>>>,
+    pub domain: Vec<u64>,
 }
+
+impl BinaryPuzzle {
+    fn new(variables: Vec<Vec<Option<u64>>>, domain: Vec<u64>) -> Self {
+        todo!()
+    }
+}
+
+impl Puzzle for BinaryPuzzle {}
