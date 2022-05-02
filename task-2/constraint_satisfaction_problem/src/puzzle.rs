@@ -5,13 +5,11 @@
 */
 
 pub trait Puzzle {
-    // checks if the value can be entered into the given coordinates
-    // without violating any constraints
-    fn check_constraints(&mut self, pos: Point, value: u32) -> bool;
+    // fn check_constraints(&mut self, pos: Point, value: u32) -> bool;
 
-    fn solve_with_backtracking(&self) -> Vec<Vec<Vec<Option<u32>>>>;
+    fn solve_with_backtracking(&mut self) -> Vec<Vec<Vec<Option<u32>>>>;
 
-    fn find_next_empty(&self, position: Point) -> Option<Point>;
+    // fn find_next_empty(&self, position: Point) -> Option<Point>;
     fn get_next_index(&self, position: &Point) -> Option<Point>;
 }
 
@@ -34,40 +32,15 @@ impl BinaryPuzzle {
         self.variables.iter().map(|row| row[x]).collect()
     }
 
-    fn backtrack(
+    // checks if the value can be entered into the given coordinates
+    // without violating any constraints
+    fn check_constraints(
         &mut self,
-        variables: Vec<Vec<Option<u32>>>,
-        current_pos: Point,
-        mut solutions: Vec<Vec<Vec<Option<u32>>>>,
-    ) -> Vec<Vec<Vec<Option<u32>>>> {
-        for value in self.domain {
-            if self.check_constraints(current_pos, value) {
-                let mut new_variables = variables.clone();
-                new_variables[current_pos.y][current_pos.x] = Some(value);
-
-                let next_empty = self.find_next_empty(current_pos);
-
-                match next_empty {
-                    None => {
-                        solutions.push(new_variables);
-                        return solutions; // fixme chyba nie return
-                    }
-                    Some => {
-                        solutions = self.backtrack(new_variables, next_empty, solutions);
-                    }
-                }
-
-                self.backtrack(new_variables)
-            }
-        }
-
-        todo!()
-    }
-}
-
-impl Puzzle for BinaryPuzzle {
-    fn check_constraints(&mut self, pos: Point, value: u32) -> bool {
-        if self.variables[pos.y][pos.x] != None {
+        variables: &mut [Vec<Option<u32>>],
+        pos: Point,
+        value: u32,
+    ) -> bool {
+        if variables[pos.y][pos.x] != None {
             return false;
         }
 
@@ -75,41 +48,41 @@ impl Puzzle for BinaryPuzzle {
         // FIXME this makes my eyes bleed
         let mut row_repetitions = 0;
 
-        if pos.x > 0 && self.variables[pos.y][pos.x - 1] == Some(value) {
+        if pos.x > 0 && variables[pos.y][pos.x - 1] == Some(value) {
             row_repetitions += 1;
-            if pos.x > 1 && self.variables[pos.y][pos.x - 2] == Some(value) {
+            if pos.x > 1 && variables[pos.y][pos.x - 2] == Some(value) {
                 row_repetitions += 1;
             }
         }
 
-        if pos.x + 1 < self.len && self.variables[pos.y][pos.x + 1] == Some(value) {
+        if pos.x + 1 < self.len && variables[pos.y][pos.x + 1] == Some(value) {
             row_repetitions += 1;
-            if pos.x + 2 < self.len && self.variables[pos.y][pos.x + 2] == Some(value) {
+            if pos.x + 2 < self.len && variables[pos.y][pos.x + 2] == Some(value) {
                 row_repetitions += 1;
             }
         }
 
-        if row_repetitions > 2 {
+        if row_repetitions > 1 {
             return false;
         }
 
         let mut column_repetitions = 0;
 
-        if pos.y > 0 && self.variables[pos.y - 1][pos.x] == Some(value) {
+        if pos.y > 0 && variables[pos.y - 1][pos.x] == Some(value) {
             column_repetitions += 1;
-            if pos.y > 1 && self.variables[pos.y - 2][pos.x] == Some(value) {
+            if pos.y > 1 && variables[pos.y - 2][pos.x] == Some(value) {
                 column_repetitions += 1;
             }
         }
 
-        if pos.y + 1 < self.len && self.variables[pos.y + 1][pos.x] == Some(value) {
+        if pos.y + 1 < self.len && variables[pos.y + 1][pos.x] == Some(value) {
             column_repetitions += 1;
-            if pos.y + 2 < self.len && self.variables[pos.y + 2][pos.x] == Some(value) {
+            if pos.y + 2 < self.len && variables[pos.y + 2][pos.x] == Some(value) {
                 column_repetitions += 1;
             }
         }
 
-        if column_repetitions > 2 {
+        if column_repetitions > 1 {
             return false;
         }
 
@@ -118,6 +91,7 @@ impl Puzzle for BinaryPuzzle {
         // row
         let mut row_zeroes = 0;
         let mut row_ones = 0;
+        let mut row_nones = 0;
 
         if value == 0 {
             row_zeroes += 1;
@@ -125,21 +99,28 @@ impl Puzzle for BinaryPuzzle {
             row_ones += 1;
         }
 
-        for val in self.variables[pos.y].iter().flatten() {
-            if *val == 0 {
-                row_zeroes += 1;
-            } else {
-                row_ones += 1;
+        // empty spaces are "wildcards"
+        for val in &variables[pos.y] {
+            match val {
+                None => row_nones += 1,
+                Some(val) => {
+                    if *val == 0 {
+                        row_zeroes += 1;
+                    } else {
+                        row_ones += 1;
+                    }
+                }
             }
         }
 
-        if row_zeroes != row_ones {
+        if ((row_zeroes - row_ones) as i32).abs() > row_nones {
             return false;
         }
 
         // column
         let mut column_zeroes = 0;
         let mut column_ones = 0;
+        let mut column_nones = 0;
 
         if value == 0 {
             column_zeroes += 1;
@@ -147,26 +128,32 @@ impl Puzzle for BinaryPuzzle {
             column_ones += 1;
         }
 
-        for val in self.get_column(pos.x).iter().flatten() {
-            if *val == 0 {
-                column_zeroes += 1;
-            } else {
-                column_ones += 1;
+        // empty spaces are "wildcards"
+        for val in &self.get_column(pos.x) {
+            match val {
+                None => column_nones += 1,
+                Some(val) => {
+                    if *val == 0 {
+                        column_zeroes += 1;
+                    } else {
+                        column_ones += 1;
+                    }
+                }
             }
         }
 
-        if column_zeroes != column_ones {
+        if ((column_zeroes - column_ones) as i32).abs() > column_nones {
             return false;
         }
 
         // check for uniqueness
 
         // temporarily put the value in
-        self.variables[pos.y][pos.x] = Some(value);
+        variables[pos.y][pos.x] = Some(value);
 
         // check rows
-        let current_row = &self.variables[pos.y];
-        for (i, row) in self.variables.iter().enumerate() {
+        let current_row = &variables[pos.y];
+        for (i, row) in variables.iter().enumerate() {
             if i == pos.y {
                 continue;
             }
@@ -189,21 +176,66 @@ impl Puzzle for BinaryPuzzle {
         }
 
         // remove the temporary value
-        self.variables[pos.y][pos.x] = None;
+        variables[pos.y][pos.x] = None;
 
         true
     }
 
-    fn solve_with_backtracking(&self) -> Vec<Vec<Vec<Option<u32>>>> {
-        todo!()
-    }
-
-    fn find_next_empty(&self, position: Point) -> Option<Point> {
+    fn find_next_empty(
+        &self,
+        variables: &[Vec<Option<u32>>],
+        mut position: Point,
+    ) -> Option<Point> {
         loop {
-            let position = self.get_next_index(&position)?;
-            if self.variables[position.y][position.x] == None {
+            position = self.get_next_index(&position)?;
+            if variables[position.y][position.x] == None {
                 return Some(position);
             }
+        }
+    }
+
+    fn backtrack(
+        &mut self,
+        mut variables: Vec<Vec<Option<u32>>>,
+        current_pos: Point,
+        mut solutions: Vec<Vec<Vec<Option<u32>>>>,
+    ) -> Vec<Vec<Vec<Option<u32>>>> {
+        for value in self.domain.clone() {
+            if self.check_constraints(&mut variables, current_pos, value) {
+                let mut new_variables = variables.clone();
+                new_variables[current_pos.y][current_pos.x] = Some(value);
+
+                let next_empty = self.find_next_empty(&new_variables, current_pos);
+
+                match next_empty {
+                    None => {
+                        solutions.push(new_variables);
+                    }
+                    Some(next_pos) => {
+                        solutions = self.backtrack(new_variables, next_pos, solutions);
+                    }
+                }
+                // self.backtrack(new_variables)+
+            }
+        }
+
+        solutions
+    }
+}
+
+impl Puzzle for BinaryPuzzle {
+    fn solve_with_backtracking(&mut self) -> Vec<Vec<Vec<Option<u32>>>> {
+        // determine the first empty spot
+        let first_point = Point { y: 0, x: 0 };
+        let first_empty = if self.variables[0][0] == None {
+            Some(first_point)
+        } else {
+            self.find_next_empty(&self.variables, first_point)
+        };
+
+        match first_empty {
+            None => vec![],
+            Some(first) => self.backtrack(self.variables.clone(), first, vec![]),
         }
     }
 
@@ -226,7 +258,7 @@ impl Puzzle for BinaryPuzzle {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Point {
     pub y: usize,
     pub x: usize,
