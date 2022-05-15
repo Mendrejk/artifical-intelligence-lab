@@ -4,10 +4,13 @@
 // variables -> x x 1
 */
 
+use crate::solution::Solution;
+use std::cmp::max;
+
 pub trait Puzzle {
     // fn check_constraints(&mut self, pos: Point, value: u32) -> bool;
 
-    fn solve_with_backtracking(&mut self) -> Vec<Vec<Vec<Option<u32>>>>;
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<u32>>;
 
     // fn find_next_empty(&self, position: Point) -> Option<Point>;
     fn get_next_index(&self, position: &Point) -> Option<Point>;
@@ -28,21 +31,18 @@ impl BinaryPuzzle {
         }
     }
 
-    fn get_column(&self, x: usize) -> Vec<Option<u32>> {
-        self.variables.iter().map(|row| row[x]).collect()
+    fn get_column(variables: &[Vec<Option<u32>>], x: usize) -> Vec<Option<u32>> {
+        variables.iter().map(|row| row[x]).collect()
     }
 
     // checks if the value can be entered into the given coordinates
     // without violating any constraints
-    fn check_constraints(
-        &mut self,
-        variables: &mut [Vec<Option<u32>>],
-        pos: Point,
-        value: u32,
-    ) -> bool {
+    fn check_constraints(variables: &mut [Vec<Option<u32>>], pos: Point, value: u32) -> bool {
         if variables[pos.y][pos.x] != None {
             return false;
         }
+
+        let len = variables.len();
 
         // check for more than two repetitions
         // FIXME this makes my eyes bleed
@@ -55,9 +55,9 @@ impl BinaryPuzzle {
             }
         }
 
-        if pos.x + 1 < self.len && variables[pos.y][pos.x + 1] == Some(value) {
+        if pos.x + 1 < len && variables[pos.y][pos.x + 1] == Some(value) {
             row_repetitions += 1;
-            if pos.x + 2 < self.len && variables[pos.y][pos.x + 2] == Some(value) {
+            if pos.x + 2 < len && variables[pos.y][pos.x + 2] == Some(value) {
                 row_repetitions += 1;
             }
         }
@@ -75,9 +75,9 @@ impl BinaryPuzzle {
             }
         }
 
-        if pos.y + 1 < self.len && variables[pos.y + 1][pos.x] == Some(value) {
+        if pos.y + 1 < len && variables[pos.y + 1][pos.x] == Some(value) {
             column_repetitions += 1;
-            if pos.y + 2 < self.len && variables[pos.y + 2][pos.x] == Some(value) {
+            if pos.y + 2 < len && variables[pos.y + 2][pos.x] == Some(value) {
                 column_repetitions += 1;
             }
         }
@@ -91,7 +91,6 @@ impl BinaryPuzzle {
         // row
         let mut row_zeroes = 0;
         let mut row_ones = 0;
-        let mut row_nones = 0;
 
         if value == 0 {
             row_zeroes += 1;
@@ -99,28 +98,21 @@ impl BinaryPuzzle {
             row_ones += 1;
         }
 
-        // empty spaces are "wildcards"
-        for val in &variables[pos.y] {
-            match val {
-                None => row_nones += 1,
-                Some(val) => {
-                    if *val == 0 {
-                        row_zeroes += 1;
-                    } else {
-                        row_ones += 1;
-                    }
-                }
+        for val in variables[pos.y].iter().flatten() {
+            if *val == 0 {
+                row_zeroes += 1;
+            } else {
+                row_ones += 1;
             }
         }
 
-        if ((row_zeroes - row_ones) as i32).abs() > row_nones {
+        if max(row_zeroes, row_ones) > len / 2 {
             return false;
         }
 
         // column
         let mut column_zeroes = 0;
         let mut column_ones = 0;
-        let mut column_nones = 0;
 
         if value == 0 {
             column_zeroes += 1;
@@ -128,21 +120,15 @@ impl BinaryPuzzle {
             column_ones += 1;
         }
 
-        // empty spaces are "wildcards"
-        for val in &self.get_column(pos.x) {
-            match val {
-                None => column_nones += 1,
-                Some(val) => {
-                    if *val == 0 {
-                        column_zeroes += 1;
-                    } else {
-                        column_ones += 1;
-                    }
-                }
+        for val in BinaryPuzzle::get_column(variables, pos.x).iter().flatten() {
+            if *val == 0 {
+                column_zeroes += 1;
+            } else {
+                column_ones += 1;
             }
         }
 
-        if ((column_zeroes - column_ones) as i32).abs() > column_nones {
+        if max(column_zeroes, column_ones) > len / 2 {
             return false;
         }
 
@@ -152,26 +138,52 @@ impl BinaryPuzzle {
         variables[pos.y][pos.x] = Some(value);
 
         // check rows
-        let current_row = &variables[pos.y];
-        for (i, row) in variables.iter().enumerate() {
-            if i == pos.y {
-                continue;
-            }
+        let mut valid_row = true;
 
-            if row == current_row {
-                return false;
+        let current_row = &variables[pos.y];
+        for elem in current_row.iter() {
+            if elem.is_none() {
+                valid_row = false;
+                break;
+            }
+        }
+
+        if valid_row {
+            for (i, row) in variables.iter().enumerate() {
+                if i == pos.y {
+                    continue;
+                }
+
+                if row == current_row {
+                    // remove the temporary value
+                    variables[pos.y][pos.x] = None;
+                    return false;
+                }
             }
         }
 
         // check columns
-        let current_column = self.get_column(pos.x);
-        for i in 0..self.len {
-            if i == pos.x {
-                continue;
-            }
+        let mut valid_column = true;
 
-            if self.get_column(i) == current_column {
-                return false;
+        let current_column = BinaryPuzzle::get_column(variables, pos.x);
+        for elem in &current_column {
+            if elem.is_none() {
+                valid_column = false;
+                break;
+            }
+        }
+
+        if valid_column {
+            for i in 0..len {
+                if i == pos.x {
+                    continue;
+                }
+
+                if BinaryPuzzle::get_column(variables, i) == current_column {
+                    // remove the temporary value
+                    variables[pos.y][pos.x] = None;
+                    return false;
+                }
             }
         }
 
@@ -198,23 +210,33 @@ impl BinaryPuzzle {
         &mut self,
         mut variables: Vec<Vec<Option<u32>>>,
         current_pos: Point,
-        mut solutions: Vec<Vec<Vec<Option<u32>>>>,
-    ) -> Vec<Vec<Vec<Option<u32>>>> {
+        mut solutions: Vec<Solution<u32>>,
+    ) -> Vec<Solution<u32>> {
         for value in self.domain.clone() {
-            if self.check_constraints(&mut variables, current_pos, value) {
+            if BinaryPuzzle::check_constraints(&mut variables, current_pos, value) {
                 let mut new_variables = variables.clone();
                 new_variables[current_pos.y][current_pos.x] = Some(value);
+
+                // println!(
+                //     "{}",
+                //     Solution {
+                //         data: new_variables.clone()
+                //     }
+                // );
 
                 let next_empty = self.find_next_empty(&new_variables, current_pos);
 
                 match next_empty {
                     None => {
-                        solutions.push(new_variables);
+                        solutions.push(Solution {
+                            data: new_variables,
+                        });
                     }
                     Some(next_pos) => {
                         solutions = self.backtrack(new_variables, next_pos, solutions);
                     }
                 }
+
                 // self.backtrack(new_variables)+
             }
         }
@@ -224,7 +246,7 @@ impl BinaryPuzzle {
 }
 
 impl Puzzle for BinaryPuzzle {
-    fn solve_with_backtracking(&mut self) -> Vec<Vec<Vec<Option<u32>>>> {
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<u32>> {
         // determine the first empty spot
         let first_point = Point { y: 0, x: 0 };
         let first_empty = if self.variables[0][0] == None {
