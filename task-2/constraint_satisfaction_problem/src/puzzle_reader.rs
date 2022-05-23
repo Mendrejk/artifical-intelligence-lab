@@ -1,6 +1,9 @@
-use crate::puzzle::{BinaryPuzzle, Puzzle};
+use crate::binary_puzzle::BinaryPuzzle;
+use crate::point::Point;
+use crate::puzzle::Puzzle;
+
+use crate::futoshiki_puzzle::FutoshikiConstraint;
 use std::fs::read_to_string;
-use std::str::Chars;
 
 pub enum PuzzleFile {
     binary_6x6,
@@ -22,6 +25,17 @@ impl PuzzleFile {
             PuzzleFile::futoshiki_6x6 => "data/futoshiki_6x6",
         }
     }
+}
+
+enum FutoshikiBoardElement {
+    LessThan,
+    GreaterThan,
+    Value(u32),
+    Empty,
+}
+
+struct FutoshikiBoard {
+    pub data: Vec<Vec<FutoshikiBoardElement>>,
 }
 
 pub fn read_puzzle(puzzle_file: &PuzzleFile) -> Box<dyn Puzzle> {
@@ -55,4 +69,14 @@ fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
         .collect();
 
     Box::new(BinaryPuzzle::new(variables, domain))
+}
+
+fn read_futoshiki_data() {
+    todo!()
+}
+
+fn find_futoshiki_constraints(point: Point) {
+    let mut constraints: Vec<FutoshikiConstraint> = vec![];
+
+    if point.y > 0 {}
 }

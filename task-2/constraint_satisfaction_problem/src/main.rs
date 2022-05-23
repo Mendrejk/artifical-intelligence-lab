@@ -1,6 +1,9 @@
 extern crate core;
 
 use crate::puzzle_reader::{read_puzzle, PuzzleFile};
+mod binary_puzzle;
+mod futoshiki_puzzle;
+mod point;
 mod puzzle;
 mod puzzle_reader;
 mod solution;
@@ -11,8 +14,8 @@ fn main() {
 
     println!("{}\n", result.len());
 
-    for solution in result {
-        println!("{}", solution);
-        println!();
-    }
+    // for solution in result {
+    //     println!("{}", solution);
+    //     println!();
+    // }
 }
