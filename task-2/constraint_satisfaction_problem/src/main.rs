@@ -9,7 +9,7 @@ mod puzzle_reader;
 mod solution;
 
 fn main() {
-    let mut puzzle = read_puzzle(&PuzzleFile::binary_10x10);
+    let mut puzzle = read_puzzle(&PuzzleFile::Binary10x10);
     let result = puzzle.solve_with_backtracking();
 
     println!("{}\n", result.len());
