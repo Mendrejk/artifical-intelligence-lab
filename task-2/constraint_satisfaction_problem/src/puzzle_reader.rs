@@ -2,7 +2,7 @@ use crate::binary_puzzle::BinaryPuzzle;
 use crate::point::Point;
 use crate::puzzle::Puzzle;
 
-use crate::futoshiki_puzzle::FutoshikiConstraint;
+use crate::futoshiki_puzzle::{FutoshikiConstraint, FutoshikiRelation};
 use std::fs::read_to_string;
 
 pub enum PuzzleFile {
@@ -27,7 +27,7 @@ impl PuzzleFile {
     }
 }
 
-enum FutoshikiBoardElement {
+enum FutoshikiElement {
     LessThan,
     GreaterThan,
     Value(u32),
@@ -35,7 +35,7 @@ enum FutoshikiBoardElement {
 }
 
 struct FutoshikiBoard {
-    pub data: Vec<Vec<FutoshikiBoardElement>>,
+    pub data: Vec<Vec<FutoshikiElement>>,
 }
 
 pub fn read_puzzle(puzzle_file: &PuzzleFile) -> Box<dyn Puzzle> {
@@ -71,12 +71,86 @@ fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
     Box::new(BinaryPuzzle::new(variables, domain))
 }
 
-fn read_futoshiki_data() {
-    todo!()
+fn read_futoshiki_data(puzzle_file: &PuzzleFile) {
+    let board_data: Vec<Vec<FutoshikiElement>> = read_to_string(puzzle_file.get_file_path())
+        .unwrap()
+        .split("\r\n")
+        .map(|row| {
+            row.chars()
+                .map(|char| match char {
+                    '>' => FutoshikiElement::GreaterThan,
+                    '<' => FutoshikiElement::LessThan,
+                    'x' => FutoshikiElement::Empty,
+                    _ => FutoshikiElement::Value(char.to_digit(10).unwrap()),
+                })
+                .collect()
+        })
+        .collect();
 }
 
-fn find_futoshiki_constraints(point: Point) {
+fn find_futoshiki_constraints(
+    board: &[Vec<FutoshikiElement>],
+    point: Point,
+) -> Vec<FutoshikiConstraint> {
     let mut constraints: Vec<FutoshikiConstraint> = vec![];
 
-    if point.y > 0 {}
+    if point.y > 1 {
+        if let Some(constraint) =
+            try_create_futoshiki_constraint(board, point.y - 1, point.x, point.y - 2, point.x)
+        {
+            constraints.push(constraint)
+        };
+    }
+
+    if point.y < board.len() - 2 {
+        if let Some(constraint) =
+            try_create_futoshiki_constraint(board, point.y + 1, point.x, point.y + 2, point.x)
+        {
+            constraints.push(constraint)
+        };
+    }
+
+    if point.x > 1 {
+        if let Some(constraint) =
+            try_create_futoshiki_constraint(board, point.y, point.x - 1, point.y, point.x - 2)
+        {
+            constraints.push(constraint)
+        };
+    }
+
+    if point.x < board.len() - 2 {
+        if let Some(constraint) =
+            try_create_futoshiki_constraint(board, point.y, point.x + 1, point.y, point.x + 2)
+        {
+            constraints.push(constraint)
+        };
+    }
+
+    constraints
+}
+
+fn try_create_futoshiki_constraint(
+    board: &[Vec<FutoshikiElement>],
+    constraint_y: usize,
+    constraint_x: usize,
+    other_y: usize,
+    other_x: usize,
+) -> Option<FutoshikiConstraint> {
+    match board[constraint_y][constraint_x] {
+        FutoshikiElement::LessThan => Some(FutoshikiConstraint {
+            relation: FutoshikiRelation::LessThan,
+            other_index: Point {
+                y: other_y,
+                x: other_x,
+            },
+        }),
+        FutoshikiElement::GreaterThan => Some(FutoshikiConstraint {
+            relation: FutoshikiRelation::GreaterThan,
+            other_index: Point {
+                y: other_y,
+                x: other_x,
+            },
+        }),
+        _ => None,
+    }
 }

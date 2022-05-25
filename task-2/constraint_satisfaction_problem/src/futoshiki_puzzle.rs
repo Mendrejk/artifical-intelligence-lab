@@ -1,3 +1,5 @@
+use crate::point::Point;
+
 pub struct FutoshikiPuzzle {
     pub variables: Vec<Vec<Option<FutoshikiNode>>>,
     pub domain: Vec<u32>,
@@ -11,7 +13,7 @@ pub struct FutoshikiNode {
 
 pub struct FutoshikiConstraint {
     pub relation: FutoshikiRelation,
-    pub other_index: usize,
+    pub other_index: Point,
 }
 
 pub enum FutoshikiRelation {
