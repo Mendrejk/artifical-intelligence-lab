@@ -44,18 +44,17 @@ struct FutoshikiBoard {
     pub data: Vec<Vec<FutoshikiElement>>,
 }
 
-pub fn read_puzzle(puzzle_file: &PuzzleFile) -> Box<dyn Puzzle> {
-    match puzzle_file {
-        PuzzleFile::Binary6x6 | PuzzleFile::Binary8x8 | PuzzleFile::Binary10x10 => {
-            read_binary_puzzle(puzzle_file)
-        }
-        PuzzleFile::Futoshiki4x4 | PuzzleFile::Futoshiki5x5 | PuzzleFile::Futoshiki6x6 => {
-            read_futoshiki_puzzle(puzzle_file)
-        }
+pub fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Option<BinaryPuzzle>
+where
+    BinaryPuzzle: Puzzle<Option<u32>>,
+{
+    if !matches!(
+        puzzle_file,
+        PuzzleFile::Binary6x6 | PuzzleFile::Binary8x8 | PuzzleFile::Binary10x10
+    ) {
+        return None;
     }
-}
 
-fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
     let data = read_to_string(puzzle_file.get_file_path()).unwrap();
     let split_data = data.split("\r\n");
 
@@ -71,10 +70,19 @@ fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
         })
         .collect();
 
-    Box::new(BinaryPuzzle::new(variables, domain))
+    Some(BinaryPuzzle::new(variables, domain))
 }
 
-fn read_futoshiki_puzzle(puzzle_file: &PuzzleFile) -> Box<FutoshikiPuzzle> {
+pub fn read_futoshiki_puzzle(puzzle_file: &PuzzleFile) -> Option<FutoshikiPuzzle>
+where
+    FutoshikiPuzzle: Puzzle<FutoshikiNode>,
+{
+    if !matches!(
+        puzzle_file,
+        PuzzleFile::Futoshiki4x4 | PuzzleFile::Futoshiki5x5 | PuzzleFile::Futoshiki6x6
+    ) {
+        return None;
+    }
     let board = FutoshikiBoard {
         data: read_to_string(puzzle_file.get_file_path())
             .unwrap()
@@ -119,7 +127,7 @@ fn read_futoshiki_puzzle(puzzle_file: &PuzzleFile) -> Box<FutoshikiPuzzle> {
         .filter(|row: &Vec<FutoshikiNode>| !row.is_empty())
         .collect();
 
-    Box::new(FutoshikiPuzzle::new(variables, domain))
+    Some(FutoshikiPuzzle::new(variables, domain))
 }
 
 fn find_futoshiki_constraints(

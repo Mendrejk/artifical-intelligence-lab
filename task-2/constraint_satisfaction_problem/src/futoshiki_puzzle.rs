@@ -33,12 +33,37 @@ impl FutoshikiPuzzle {
     }
 }
 
-impl Puzzle for FutoshikiPuzzle {
-    fn solve_with_backtracking(&mut self) -> Vec<Solution<Option<u32>>> {
+impl Puzzle<FutoshikiNode> for FutoshikiPuzzle {
+    fn find_next_empty(&self, variables: &[Vec<FutoshikiNode>], position: Point) -> Option<Point> {
         todo!()
     }
 
     fn get_next_index(&self, position: &Point) -> Option<Point> {
+        todo!()
+    }
+
+    fn get_column(variables: &[Vec<FutoshikiNode>], x: usize) -> Vec<FutoshikiNode> {
+        todo!()
+    }
+
+    fn check_constraints(
+        variables: &mut [Vec<FutoshikiNode>],
+        pos: Point,
+        value: FutoshikiNode,
+    ) -> bool {
+        todo!()
+    }
+
+    fn backtrack(
+        &mut self,
+        variables: Vec<Vec<FutoshikiNode>>,
+        current_pos: Point,
+        solutions: Vec<Solution<FutoshikiNode>>,
+    ) -> Vec<Solution<FutoshikiNode>> {
+        todo!()
+    }
+
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<FutoshikiNode>> {
         todo!()
     }
 }

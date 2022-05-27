@@ -18,17 +18,55 @@ impl BinaryPuzzle {
             domain,
         }
     }
+}
 
-    fn get_column(variables: &[Vec<Option<u32>>], x: usize) -> Vec<Option<u32>> {
-        variables.iter().map(|row| row[x]).collect()
+impl Puzzle<Option<u32>> for BinaryPuzzle {
+    fn find_next_empty(
+        &self,
+        variables: &[Vec<Option<u32>>],
+        mut position: Point,
+    ) -> Option<Point> {
+        loop {
+            position = self.get_next_index(&position)?;
+            if variables[position.y][position.x] == None {
+                return Some(position);
+            }
+        }
     }
 
-    // checks if the value can be entered into the given coordinates
-    // without violating any constraints
-    fn check_constraints(variables: &mut [Vec<Option<u32>>], pos: Point, value: u32) -> bool {
+    fn get_next_index(&self, position: &Point) -> Option<Point> {
+        if position.x == self.len - 1 {
+            if position.y == self.len - 1 {
+                return None;
+            }
+
+            return Some(Point {
+                y: position.y + 1,
+                x: 0,
+            });
+        }
+
+        Some(Point {
+            y: position.y,
+            x: position.x + 1,
+        })
+    }
+
+    fn check_constraints(
+        variables: &mut [Vec<Option<u32>>],
+        pos: Point,
+        inserted: Option<u32>,
+    ) -> bool {
+        // ensure that the spot at pos is valid
         if variables[pos.y][pos.x] != None {
             return false;
         }
+
+        // ensure that the inserted value is valid
+        let value = match inserted {
+            Some(val) => val,
+            None => return false,
+        };
 
         let len = variables.len();
 
@@ -181,19 +219,6 @@ impl BinaryPuzzle {
         true
     }
 
-    fn find_next_empty(
-        &self,
-        variables: &[Vec<Option<u32>>],
-        mut position: Point,
-    ) -> Option<Point> {
-        loop {
-            position = self.get_next_index(&position)?;
-            if variables[position.y][position.x] == None {
-                return Some(position);
-            }
-        }
-    }
-
     fn backtrack(
         &mut self,
         mut variables: Vec<Vec<Option<u32>>>,
@@ -201,7 +226,7 @@ impl BinaryPuzzle {
         mut solutions: Vec<Solution<Option<u32>>>,
     ) -> Vec<Solution<Option<u32>>> {
         for value in self.domain.clone() {
-            if BinaryPuzzle::check_constraints(&mut variables, current_pos, value) {
+            if BinaryPuzzle::check_constraints(&mut variables, current_pos, Some(value)) {
                 let mut new_variables = variables.clone();
                 new_variables[current_pos.y][current_pos.x] = Some(value);
 
@@ -222,9 +247,7 @@ impl BinaryPuzzle {
 
         solutions
     }
-}
 
-impl Puzzle for BinaryPuzzle {
     fn solve_with_backtracking(&mut self) -> Vec<Solution<Option<u32>>> {
         // determine the first empty spot
         let first_point = Point { y: 0, x: 0 };
@@ -238,23 +261,5 @@ impl Puzzle for BinaryPuzzle {
             None => vec![],
             Some(first) => self.backtrack(self.variables.clone(), first, vec![]),
         }
-    }
-
-    fn get_next_index(&self, position: &Point) -> Option<Point> {
-        if position.x == self.len - 1 {
-            if position.y == self.len - 1 {
-                return None;
-            }
-
-            return Some(Point {
-                y: position.y + 1,
-                x: 0,
-            });
-        }
-
-        Some(Point {
-            y: position.y,
-            x: position.x + 1,
-        })
     }
 }
