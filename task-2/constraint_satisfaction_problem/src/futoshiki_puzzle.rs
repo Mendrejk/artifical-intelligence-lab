@@ -34,7 +34,7 @@ impl FutoshikiPuzzle {
 }
 
 impl Puzzle for FutoshikiPuzzle {
-    fn solve_with_backtracking(&mut self) -> Vec<Solution<u32>> {
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<Option<u32>>> {
         todo!()
     }
 

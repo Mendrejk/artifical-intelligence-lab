@@ -198,19 +198,12 @@ impl BinaryPuzzle {
         &mut self,
         mut variables: Vec<Vec<Option<u32>>>,
         current_pos: Point,
-        mut solutions: Vec<Solution<u32>>,
-    ) -> Vec<Solution<u32>> {
+        mut solutions: Vec<Solution<Option<u32>>>,
+    ) -> Vec<Solution<Option<u32>>> {
         for value in self.domain.clone() {
             if BinaryPuzzle::check_constraints(&mut variables, current_pos, value) {
                 let mut new_variables = variables.clone();
                 new_variables[current_pos.y][current_pos.x] = Some(value);
-
-                // println!(
-                //     "{}",
-                //     Solution {
-                //         data: new_variables.clone()
-                //     }
-                // );
 
                 let next_empty = self.find_next_empty(&new_variables, current_pos);
 
@@ -224,8 +217,6 @@ impl BinaryPuzzle {
                         solutions = self.backtrack(new_variables, next_pos, solutions);
                     }
                 }
-
-                // self.backtrack(new_variables)+
             }
         }
 
@@ -234,7 +225,7 @@ impl BinaryPuzzle {
 }
 
 impl Puzzle for BinaryPuzzle {
-    fn solve_with_backtracking(&mut self) -> Vec<Solution<u32>> {
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<Option<u32>>> {
         // determine the first empty spot
         let first_point = Point { y: 0, x: 0 };
         let first_empty = if self.variables[0][0] == None {

@@ -31,6 +31,7 @@ impl PuzzleFile {
     }
 }
 
+#[derive(Debug)]
 enum FutoshikiElement {
     Empty,
     NoRelation,
@@ -74,25 +75,28 @@ fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Box<BinaryPuzzle> {
 }
 
 fn read_futoshiki_puzzle(puzzle_file: &PuzzleFile) -> Box<FutoshikiPuzzle> {
-    let board: Vec<Vec<FutoshikiElement>> = read_to_string(puzzle_file.get_file_path())
-        .unwrap()
-        .split("\r\n")
-        .map(|row| {
-            row.chars()
-                .map(|char| match char {
-                    '>' => FutoshikiElement::GreaterThan,
-                    '<' => FutoshikiElement::LessThan,
-                    '-' => FutoshikiElement::NoRelation,
-                    'x' => FutoshikiElement::Empty,
-                    _ => FutoshikiElement::Value(char.to_digit(10).unwrap()),
-                })
-                .collect()
-        })
-        .collect();
+    let board = FutoshikiBoard {
+        data: read_to_string(puzzle_file.get_file_path())
+            .unwrap()
+            .split("\r\n")
+            .map(|row| {
+                row.chars()
+                    .map(|char| match char {
+                        '>' => FutoshikiElement::GreaterThan,
+                        '<' => FutoshikiElement::LessThan,
+                        '-' => FutoshikiElement::NoRelation,
+                        'x' => FutoshikiElement::Empty,
+                        _ => FutoshikiElement::Value(char.to_digit(10).unwrap()),
+                    })
+                    .collect()
+            })
+            .collect(),
+    };
 
-    let domain: Vec<u32> = (1..=(board.len() as u32)).collect();
+    let domain: Vec<u32> = (1..=(board.data.len() as u32)).collect();
 
     let variables: Vec<Vec<FutoshikiNode>> = board
+        .data
         .iter()
         .map(|row| row.iter().enumerate())
         .enumerate()
@@ -103,15 +107,16 @@ fn read_futoshiki_puzzle(puzzle_file: &PuzzleFile) -> Box<FutoshikiPuzzle> {
             .map(|(x, elem)| match elem {
                 FutoshikiElement::Value(val) => FutoshikiNode {
                     value: Some(*val),
-                    constraints: find_futoshiki_constraints(&board, Point { y, x }),
+                    constraints: find_futoshiki_constraints(&board.data, Point { y, x }),
                 },
                 _ => FutoshikiNode {
                     value: None,
-                    constraints: find_futoshiki_constraints(&board, Point { y, x }),
+                    constraints: find_futoshiki_constraints(&board.data, Point { y, x }),
                 },
             })
             .collect()
         })
+        .filter(|row: &Vec<FutoshikiNode>| !row.is_empty())
         .collect();
 
     Box::new(FutoshikiPuzzle::new(variables, domain))
@@ -125,7 +130,7 @@ fn find_futoshiki_constraints(
 
     if point.y > 1 {
         if let Some(constraint) =
-            try_create_futoshiki_constraint(board, point.y - 1, point.x, point.y - 2, point.x)
+            try_create_futoshiki_constraint(board, point.y - 1, point.x / 2, point.y - 2, point.x)
         {
             constraints.push(constraint)
         };
@@ -133,7 +138,7 @@ fn find_futoshiki_constraints(
 
     if point.y < board.len() - 2 {
         if let Some(constraint) =
-            try_create_futoshiki_constraint(board, point.y + 1, point.x, point.y + 2, point.x)
+            try_create_futoshiki_constraint(board, point.y + 1, point.x / 2, point.y + 2, point.x)
         {
             constraints.push(constraint)
         };
@@ -147,7 +152,7 @@ fn find_futoshiki_constraints(
         };
     }
 
-    if point.x < board.len() - 2 {
+    if point.x < board[point.y].len() - 2 {
         if let Some(constraint) =
             try_create_futoshiki_constraint(board, point.y, point.x + 1, point.y, point.x + 2)
         {

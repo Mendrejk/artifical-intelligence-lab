@@ -18,4 +18,6 @@ fn main() {
     //     println!("{}", solution);
     //     println!();
     // }
+
+    let foo = read_puzzle(&PuzzleFile::Futoshiki4x4);
 }
