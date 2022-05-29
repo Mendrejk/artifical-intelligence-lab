@@ -101,8 +101,6 @@ where
             .collect(),
     };
 
-    let domain: Vec<u32> = (1..=(board.data.len() as u32)).collect();
-
     let variables: Vec<Vec<FutoshikiNode>> = board
         .data
         .iter()
@@ -126,6 +124,8 @@ where
         })
         .filter(|row: &Vec<FutoshikiNode>| !row.is_empty())
         .collect();
+
+    let domain: Vec<u32> = (1..=(variables.len() as u32)).collect();
 
     Some(FutoshikiPuzzle::new(variables, domain))
 }
@@ -178,19 +178,20 @@ fn try_create_futoshiki_constraint(
     other_y: usize,
     other_x: usize,
 ) -> Option<FutoshikiConstraint> {
+    // coordinates are / 2 because in the final collection, there will be no constraint fields
     match board[constraint_y][constraint_x] {
         FutoshikiElement::LessThan => Some(FutoshikiConstraint {
             relation: FutoshikiRelation::LessThan,
-            other_index: Point {
-                y: other_y,
-                x: other_x,
+            other_position: Point {
+                y: other_y / 2,
+                x: other_x / 2,
             },
         }),
         FutoshikiElement::GreaterThan => Some(FutoshikiConstraint {
             relation: FutoshikiRelation::GreaterThan,
-            other_index: Point {
-                y: other_y,
-                x: other_x,
+            other_position: Point {
+                y: other_y / 2,
+                x: other_x / 2,
             },
         }),
         _ => None,

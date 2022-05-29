@@ -10,9 +10,7 @@ mod puzzle_reader;
 mod solution;
 
 fn main() {
-    let mut puzzle = read_binary_puzzle(&PuzzleFile::Binary10x10).unwrap();
+    let mut puzzle = read_futoshiki_puzzle(&PuzzleFile::Futoshiki4x4).unwrap();
     let result = puzzle.solve_with_backtracking();
     println!("{}\n", result.len());
-
-    let foo = read_futoshiki_puzzle(&PuzzleFile::Futoshiki4x4).unwrap();
 }

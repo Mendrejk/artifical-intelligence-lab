@@ -27,35 +27,17 @@ impl Puzzle<Option<u32>> for BinaryPuzzle {
         mut position: Point,
     ) -> Option<Point> {
         loop {
-            position = self.get_next_index(&position)?;
+            position = Self::get_next_index(self.len, &position)?;
             if variables[position.y][position.x] == None {
                 return Some(position);
             }
         }
     }
 
-    fn get_next_index(&self, position: &Point) -> Option<Point> {
-        if position.x == self.len - 1 {
-            if position.y == self.len - 1 {
-                return None;
-            }
-
-            return Some(Point {
-                y: position.y + 1,
-                x: 0,
-            });
-        }
-
-        Some(Point {
-            y: position.y,
-            x: position.x + 1,
-        })
-    }
-
     fn check_constraints(
         variables: &mut [Vec<Option<u32>>],
         pos: Point,
-        inserted: Option<u32>,
+        inserted: &Option<u32>,
     ) -> bool {
         // ensure that the spot at pos is valid
         if variables[pos.y][pos.x] != None {
@@ -63,7 +45,7 @@ impl Puzzle<Option<u32>> for BinaryPuzzle {
         }
 
         // ensure that the inserted value is valid
-        let value = match inserted {
+        let value = *match inserted {
             Some(val) => val,
             None => return false,
         };
@@ -146,8 +128,11 @@ impl Puzzle<Option<u32>> for BinaryPuzzle {
             column_ones += 1;
         }
 
-        for val in BinaryPuzzle::get_column(variables, pos.x).iter().flatten() {
-            if *val == 0 {
+        for val in BinaryPuzzle::get_column(variables, pos.x)
+            .iter()
+            .filter_map(|&elem| *elem)
+        {
+            if val == 0 {
                 column_zeroes += 1;
             } else {
                 column_ones += 1;
@@ -226,7 +211,7 @@ impl Puzzle<Option<u32>> for BinaryPuzzle {
         mut solutions: Vec<Solution<Option<u32>>>,
     ) -> Vec<Solution<Option<u32>>> {
         for value in self.domain.clone() {
-            if BinaryPuzzle::check_constraints(&mut variables, current_pos, Some(value)) {
+            if Self::check_constraints(&mut variables, current_pos, &Some(value)) {
                 let mut new_variables = variables.clone();
                 new_variables[current_pos.y][current_pos.x] = Some(value);
 
