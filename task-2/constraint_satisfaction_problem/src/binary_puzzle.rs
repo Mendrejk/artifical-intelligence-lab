@@ -219,7 +219,7 @@ impl Puzzle<BinaryNode> for BinaryPuzzle {
         for value in self.domain.clone() {
             let node = BinaryNode {
                 value: Some(value),
-                domain: self.domain.clone(),
+                domain: variables[current_pos.y][current_pos.x].domain.clone(),
             };
 
             if Self::check_constraints(&mut variables, current_pos, &node.clone()) {

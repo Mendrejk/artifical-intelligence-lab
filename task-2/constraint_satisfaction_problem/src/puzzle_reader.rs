@@ -107,6 +107,8 @@ where
             .collect(),
     };
 
+    let domain: Vec<u32> = (1..=((board.data.len() / 2 + 1) as u32)).collect();
+
     let variables: Vec<Vec<FutoshikiNode>> = board
         .data
         .iter()
@@ -120,18 +122,18 @@ where
                 FutoshikiElement::Value(val) => FutoshikiNode {
                     value: Some(*val),
                     constraints: find_futoshiki_constraints(&board.data, Point { y, x }),
+                    domain: domain.clone(),
                 },
                 _ => FutoshikiNode {
                     value: None,
                     constraints: find_futoshiki_constraints(&board.data, Point { y, x }),
+                    domain: domain.clone(),
                 },
             })
             .collect()
         })
         .filter(|row: &Vec<FutoshikiNode>| !row.is_empty())
         .collect();
-
-    let domain: Vec<u32> = (1..=(variables.len() as u32)).collect();
 
     Some(FutoshikiPuzzle::new(variables, domain))
 }

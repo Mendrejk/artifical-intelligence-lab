@@ -19,6 +19,7 @@ pub struct FutoshikiConstraint {
 pub struct FutoshikiNode {
     pub value: Option<u32>,
     pub constraints: Vec<FutoshikiConstraint>,
+    pub domain: Vec<u32>,
 }
 
 pub struct FutoshikiPuzzle {
@@ -123,6 +124,7 @@ impl Puzzle<FutoshikiNode> for FutoshikiPuzzle {
             let node = FutoshikiNode {
                 value: Some(value),
                 constraints: variables[current_pos.y][current_pos.x].constraints.clone(),
+                domain: variables[current_pos.y][current_pos.x].domain.clone(),
             };
 
             if Self::check_constraints(&mut variables, current_pos, &node) {
