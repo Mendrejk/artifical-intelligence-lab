@@ -1,4 +1,4 @@
-use crate::binary_puzzle::BinaryPuzzle;
+use crate::binary_puzzle::{BinaryNode, BinaryPuzzle};
 use crate::point::Point;
 use crate::puzzle::Puzzle;
 
@@ -46,7 +46,7 @@ struct FutoshikiBoard {
 
 pub fn read_binary_puzzle(puzzle_file: &PuzzleFile) -> Option<BinaryPuzzle>
 where
-    BinaryPuzzle: Puzzle<Option<u32>>,
+    BinaryPuzzle: Puzzle<BinaryNode>,
 {
     if !matches!(
         puzzle_file,
@@ -59,12 +59,18 @@ where
     let split_data = data.split("\r\n");
 
     let domain = vec![0, 1];
-    let variables: Vec<Vec<Option<u32>>> = split_data
+    let variables: Vec<Vec<BinaryNode>> = split_data
         .map(|row| {
             row.chars()
                 .map(|char| match char {
-                    'x' => None,
-                    _ => Some(char.to_digit(10).unwrap()),
+                    'x' => BinaryNode {
+                        value: None,
+                        domain: domain.clone(),
+                    },
+                    _ => BinaryNode {
+                        value: Some(char.to_digit(10).unwrap()),
+                        domain: domain.clone(),
+                    },
                 })
                 .collect()
         })

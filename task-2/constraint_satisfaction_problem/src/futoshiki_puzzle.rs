@@ -69,6 +69,7 @@ impl FutoshikiPuzzle {
 }
 
 impl Puzzle<FutoshikiNode> for FutoshikiPuzzle {
+    // noinspection DuplicatedCode
     fn find_next_empty(
         &self,
         variables: &[Vec<FutoshikiNode>],
