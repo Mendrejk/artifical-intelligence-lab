@@ -27,14 +27,66 @@ impl BinaryPuzzle {
 }
 
 impl Puzzle<BinaryNode> for BinaryPuzzle {
-    // noinspection DuplicatedCode
-    fn find_next_empty(&self, variables: &[Vec<BinaryNode>], mut position: Point) -> Option<Point> {
-        loop {
-            position = Self::get_next_index(self.len, &position)?;
-            if variables[position.y][position.x].value == None {
-                return Some(position);
+    fn solve_with_backtracking(&mut self) -> Vec<Solution<BinaryNode>> {
+        // determine the first empty spot
+        let first_point = Point { y: 0, x: 0 };
+        let first_empty = if self.variables[0][0].value == None {
+            Some(first_point)
+        } else {
+            self.find_next_empty(&self.variables, first_point)
+        };
+
+        match first_empty {
+            None => vec![],
+            Some(first) => self.backtrack(self.variables.clone(), first, vec![]),
+        }
+    }
+
+    fn solve_with_forward_checking(&mut self) -> Vec<Solution<BinaryNode>> {
+        todo!()
+    }
+
+    fn backtrack(
+        &mut self,
+        mut variables: Vec<Vec<BinaryNode>>,
+        current_pos: Point,
+        mut solutions: Vec<Solution<BinaryNode>>,
+    ) -> Vec<Solution<BinaryNode>> {
+        for value in self.domain.clone() {
+            let node = BinaryNode {
+                value: Some(value),
+                domain: variables[current_pos.y][current_pos.x].domain.clone(),
+            };
+
+            if Self::check_constraints(&mut variables, current_pos, &node.clone()) {
+                let mut new_variables = variables.clone();
+                new_variables[current_pos.y][current_pos.x] = node;
+
+                let next_empty = self.find_next_empty(&new_variables, current_pos);
+
+                match next_empty {
+                    None => {
+                        solutions.push(Solution {
+                            data: new_variables,
+                        });
+                    }
+                    Some(next_pos) => {
+                        solutions = self.backtrack(new_variables, next_pos, solutions);
+                    }
+                }
             }
         }
+
+        solutions
+    }
+
+    fn forward_check(
+        &mut self,
+        variables: Vec<Vec<BinaryNode>>,
+        current_pos: Point,
+        solutions: Vec<Solution<BinaryNode>>,
+    ) -> Vec<Solution<BinaryNode>> {
+        todo!()
     }
 
     fn check_constraints(
@@ -210,52 +262,24 @@ impl Puzzle<BinaryNode> for BinaryPuzzle {
         true
     }
 
-    fn backtrack(
-        &mut self,
-        mut variables: Vec<Vec<BinaryNode>>,
-        current_pos: Point,
-        mut solutions: Vec<Solution<BinaryNode>>,
-    ) -> Vec<Solution<BinaryNode>> {
-        for value in self.domain.clone() {
-            let node = BinaryNode {
-                value: Some(value),
-                domain: variables[current_pos.y][current_pos.x].domain.clone(),
-            };
-
-            if Self::check_constraints(&mut variables, current_pos, &node.clone()) {
-                let mut new_variables = variables.clone();
-                new_variables[current_pos.y][current_pos.x] = node;
-
-                let next_empty = self.find_next_empty(&new_variables, current_pos);
-
-                match next_empty {
-                    None => {
-                        solutions.push(Solution {
-                            data: new_variables,
-                        });
-                    }
-                    Some(next_pos) => {
-                        solutions = self.backtrack(new_variables, next_pos, solutions);
-                    }
-                }
-            }
-        }
-
-        solutions
+    fn restrain_forward_checking_domains(
+        variables: &mut [Vec<BinaryNode>],
+        pos: Point,
+        inserted: &BinaryNode,
+    ) -> bool
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 
-    fn solve_with_backtracking(&mut self) -> Vec<Solution<BinaryNode>> {
-        // determine the first empty spot
-        let first_point = Point { y: 0, x: 0 };
-        let first_empty = if self.variables[0][0].value == None {
-            Some(first_point)
-        } else {
-            self.find_next_empty(&self.variables, first_point)
-        };
-
-        match first_empty {
-            None => vec![],
-            Some(first) => self.backtrack(self.variables.clone(), first, vec![]),
+    // noinspection DuplicatedCode
+    fn find_next_empty(&self, variables: &[Vec<BinaryNode>], mut position: Point) -> Option<Point> {
+        loop {
+            position = Self::get_next_index(self.len, &position)?;
+            if variables[position.y][position.x].value == None {
+                return Some(position);
+            }
         }
     }
 }
